@@ -157,46 +157,24 @@ endif (ENABLE_SYSTEM_GMIC)
 #
 find_package(Threads REQUIRED)
 
-if(BUILD_WITH_QT6)
-
-    #
-    # Qt6
-    #
-    find_package(Qt6 ${MIN_QT_VERSION}
-            REQUIRED COMPONENTS
-            Core
-            Gui
-            Widgets
-            Network
-    )
-
-    #
-    # For the translations
-    #
-    find_package(Qt6LinguistTools REQUIRED)
-
-    set(QT_VERSION_MAJOR 6)
-
-else()
-
-    #
-    # Qt5
-    #
-    find_package(Qt5 ${MIN_QT_VERSION}
-            REQUIRED COMPONENTS
-            Core
-            Gui
-            Widgets
-            Network
-    )
-
-    #
-    # For the translations
-    #
-    find_package(Qt5LinguistTools REQUIRED)
-
-    set(QT_VERSION_MAJOR 5)
-
+#
+# Qt
+#
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core)
+find_package(Qt${QT_VERSION_MAJOR} ${MIN_QT_VERSION}
+        REQUIRED COMPONENTS
+        Core
+        Gui
+        Widgets
+        Network
+        LinguistTools
+)
+if(QT_VERSION VERSION_GREATER_EQUAL "6.3")
+  if(QT_NO_CREATE_VERSIONLESS_FUNCTIONS)
+    qt6_standard_project_setup()
+  else()
+    qt_standard_project_setup()
+  endif()
 endif()
 
 #
@@ -303,11 +281,28 @@ endif()
 # add all defines
 #
 
+if (QT_NO_CREATE_VERSIONLESS_FUNCTIONS)
+  set(gmic_qt_LIBRARIES
+          Qt${QT_VERSION_MAJOR}::Core
+          Qt${QT_VERSION_MAJOR}::Widgets
+          Qt${QT_VERSION_MAJOR}::Gui
+          Qt${QT_VERSION_MAJOR}::Network
+  )
+else()
+  set(gmic_qt_LIBRARIES
+          Qt::Core
+          Qt::Widgets
+          Qt::Gui
+          Qt::Network
+  )
+endif()
+
 set(gmic_qt_LIBRARIES
         Qt${QT_VERSION_MAJOR}::Core
         Qt${QT_VERSION_MAJOR}::Widgets
         Qt${QT_VERSION_MAJOR}::Gui
         Qt${QT_VERSION_MAJOR}::Network
+        ${gmic_qt_LIBRARIES}
         ${PNG_LIBRARIES}
         ${FFTW3_LIBRARIES}
         ${ZLIB_LIBRARIES}
@@ -351,7 +346,10 @@ if (APPLE)
     add_definitions(-D_IS_MACOS_)
     set(CMAKE_MACOSX_RPATH 1)
     set(BUILD_WITH_INSTALL_RPATH 1)
-    add_definitions(-mmacosx-version-min=10.9 -Wno-macro-redefined -Wno-deprecated-register)
+    add_definitions(-Wno-macro-redefined -Wno-deprecated-register)
+    if (QT_VERSION_MAJOR VERSION_EQUAL "5")
+      add_definitions(-mmacosx-version-min=10.9)
+    endif()
 endif()
 
 if (WIN32)
@@ -697,10 +695,22 @@ else()
 
   set_source_files_properties(${gmic_filters_translation_files} PROPERTIES OUTPUT_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/translations/filters)
 
-  qt5_add_translation(gmic_qt_QM
+  if(QT_VERSION VERSION_LESS_EQUAL "5.15.0")
+    qt5_add_translation(gmic_qt_QM
       ${gmic_translation_files}
       ${gmic_filters_translation_files}
-  )
+    )
+  elseif(QT_NO_CREATE_VERSIONLESS_FUNCTIONS)
+    qt6_add_translation(gmic_qt_QM
+      ${gmic_translation_files}
+      ${gmic_filters_translation_files}
+    )
+  else()
+    qt_add_translation(gmic_qt_QM
+      ${gmic_translation_files}
+      ${gmic_filters_translation_files}
+    )
+  endif()
 endif()
 
 include(GNUInstallDirs)
@@ -784,7 +794,13 @@ elseif (${GMIC_QT_HOST} STREQUAL "krita-plugin")
 
     set (gmic_qt_SRCS ${gmic_qt_SRCS} src/Host/KritaPlugin/host.cpp src/Host/KritaPlugin/gmicqttoolplugin.cpp)
     set (gmic_qt_SRCS ${gmic_qt_SRCS} )
-    qt5_wrap_ui(gmic_qt_SRCS ${gmic_qt_FORMS})
+    if(QT_VERSION VERSION_LESS_EQUAL "5.15.0")
+      qt5_wrap_ui(gmic_qt_SRCS ${gmic_qt_FORMS})
+    elseif(QT_NO_CREATE_VERSIONLESS_FUNCTIONS)
+      qt6_wrap_ui(gmic_qt_SRCS ${gmic_qt_FORMS})
+    else()
+      qt_wrap_ui(gmic_qt_SRCS ${gmic_qt_FORMS})
+    endif()
     add_definitions(-DGMIC_HOST=krita-plugin)
     add_definitions(-D_GMIC_QT_DISABLE_THEMING_)
     add_definitions(-D_GMIC_QT_CONSENT_TO_UPDATE_FIRST_)
