@@ -30,6 +30,7 @@
 #include "Common.h"
 #include "FilterParameters/AbstractParameter.h"
 #include "FilterParameters/PointParameter.h"
+#include "Logger.h"
 #include "Misc.h"
 
 namespace GmicQt
@@ -188,6 +189,7 @@ bool FilterParametersWidget::build(const QString & name, const QString & hash, c
   while (it != _parameters.end()) {
     AbstractParameter * parameter = *it;
     if (parameter->addTo(this, row)) {
+      parameter->hideWidgets();
       grid->setRowStretch(row, 0);
       ++row;
     }
@@ -195,7 +197,11 @@ bool FilterParametersWidget::build(const QString & name, const QString & hash, c
     ++it;
   }
 
-  if (visibilityStates.isEmpty()) {
+  if (_actualParametersCount != visibilityStates.size()) {
+    Logger::warning(QString("Parameters/SetVisibilities: Wrong number of values %1 (expecting %2)").arg(visibilityStates.size()).arg(_actualParametersCount));
+  }
+
+  if (_actualParametersCount != visibilityStates.size()) {
     applyDefaultVisibilityStates();
   } else {
     setVisibilityStates(visibilityStates);
@@ -290,7 +296,7 @@ void FilterParametersWidget::setValues(const QStringList & list, bool notify)
     return;
   }
   if (_actualParametersCount != list.size()) {
-    TRACE << "Wrong number of values" << list << "expecting" << _actualParametersCount;
+    Logger::warning(QString("Parameters/SetValues: Wrong number of values %1 (expecting %2)").arg(list.size()).arg(_actualParametersCount));
     return;
   }
   auto itValue = list.begin();
@@ -302,13 +308,14 @@ void FilterParametersWidget::setValues(const QStringList & list, bool notify)
   updateValueString(notify);
 }
 
-void FilterParametersWidget::setVisibilityStates(const QList<int> & states)
+void FilterParametersWidget::setVisibilityStates(QList<int> states)
 {
   if (states.isEmpty()) {
-    return;
+    states = defaultVisibilityStates();
   }
+
   if (_actualParametersCount != states.size()) {
-    TRACE << "Wrong number of states" << states << "expecting" << _actualParametersCount;
+    Logger::warning(QString("Parameters/SetVisibilities: Wrong number of values %1 (expecting %2)").arg(states.size()).arg(_actualParametersCount));
     return;
   }
 
