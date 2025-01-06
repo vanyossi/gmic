@@ -32,6 +32,7 @@
 #include <QLabel>
 #include <QPainter>
 #include <QPushButton>
+#include <QRandomGenerator>
 #include <QRegularExpression>
 #include <QWidget>
 #include <cstdio>
@@ -149,6 +150,18 @@ void ColorParameter::reset()
 {
   _value = _default;
   updateButtonColor();
+}
+
+void ColorParameter::randomize()
+{
+  if (acceptRandom()) {
+    auto generator = QRandomGenerator::global();
+    _value.setRgb(generator->bounded(0, 256), //
+                  generator->bounded(0, 256), //
+                  generator->bounded(0, 256), //
+                  _alphaChannel ? generator->bounded(164, 256) : 255);
+    updateButtonColor();
+  }
 }
 
 bool ColorParameter::initFromText(const QString & filterName, const char * text, int & textLength)

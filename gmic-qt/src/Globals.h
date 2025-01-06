@@ -39,6 +39,7 @@ const char WarningPrefix = '!';
 
 #define SLIDER_MIN_WIDTH 60
 #define PARAMETERS_CACHE_FILENAME "gmic_qt_params.dat"
+#define FILTER_GUI_DYNAMISM_CACHE_FILENAME "gmic_qt_dynamism.dat"
 #define FILTERS_VISIBILITY_FILENAME "gmic_qt_visibility.dat"
 #define FILTERS_TAGS_FILENAME "gmic_qt_tags.dat"
 #define FILTERS_CACHE_FILENAME "gmic_qt_filters.dat"
@@ -53,6 +54,7 @@ const char WarningPrefix = '!';
 #define ENABLE_FILTER_TRANSLATION "Config/FilterTranslation"
 #define LANGUAGE_CODE_KEY "Config/LanguageCode"
 #define HIGHDPI_KEY "Config/HighDPIEnabled"
+#define PREVIEW_SPLITTER_KEY "Config/PreviewSplitterType"
 #define INTERNET_NEVER_UPDATE_PERIODICITY std::numeric_limits<int>::max()
 #define ONE_DAY_HOURS (24)
 #define ONE_WEEK_HOURS (7 * 24)

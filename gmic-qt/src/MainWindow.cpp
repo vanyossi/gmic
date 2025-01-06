@@ -38,13 +38,11 @@
 #include <QShowEvent>
 #include <QStringList>
 #include <QStyleFactory>
-#include <cassert>
-#include <iostream>
-#include <typeinfo>
 #include "Common.h"
 #include "CroppedActiveLayerProxy.h"
 #include "CroppedImageListProxy.h"
 #include "DialogSettings.h"
+#include "FilterGuiDynamismCache.h"
 #include "FilterSelector/FavesModelReader.h"
 #include "FilterSelector/FiltersPresenter.h"
 #include "FilterTextTranslator.h"
@@ -55,7 +53,6 @@
 #include "LayersExtentProxy.h"
 #include "Logger.h"
 #include "Misc.h"
-#include "OverrideCursor.h"
 #include "ParametersCache.h"
 #include "PersistentMemory.h"
 #include "Settings.h"
@@ -104,14 +101,17 @@ MainWindow::MainWindow(QWidget * parent) : QMainWindow(parent), ui(new Ui::MainW
   tsp.append(QString("/usr/share/icons/gnome"));
   QIcon::setThemeSearchPaths(tsp);
 
-  _filterUpdateWidgets = {ui->previewWidget, ui->zoomLevelSelector, ui->filtersView,  ui->filterParams,      ui->tbUpdateFilters, ui->pbFullscreen, ui->pbSettings,
-                          ui->pbOk,          ui->pbApply,           ui->pbClose,      ui->tbResetParameters, ui->tbCopyCommand,   ui->searchField,  ui->cbPreview,
-                          ui->tbAddFave,     ui->tbRemoveFave,      ui->tbRenameFave, ui->tbExpandCollapse,  ui->tbSelectionMode};
+  _filterUpdateWidgets = {ui->previewWidget, ui->zoomLevelSelector, ui->filtersView,  ui->filterParams,      ui->tbUpdateFilters, ui->pbFullscreen,         ui->pbSettings,
+                          ui->pbOk,          ui->pbApply,           ui->pbClose,      ui->tbResetParameters, ui->tbCopyCommand,   ui->searchField,          ui->cbPreview,
+                          ui->tbAddFave,     ui->tbRemoveFave,      ui->tbRenameFave, ui->tbExpandCollapse,  ui->tbSelectionMode, ui->tbRandomizeParameters};
 
   ui->tbAddFave->setToolTip(tr("Add fave"));
 
   ui->tbResetParameters->setToolTip(tr("Reset parameters to default values"));
   ui->tbResetParameters->setVisible(false);
+
+  ui->tbRandomizeParameters->setToolTip(tr("Randomize parameters"));
+  ui->tbRandomizeParameters->setVisible(false);
 
   QShortcut * copyShortcut = new QShortcut(QKeySequence::Copy, this);
   copyShortcut->setContext(Qt::ApplicationShortcut);
@@ -122,6 +122,10 @@ MainWindow::MainWindow(QWidget * parent) : QMainWindow(parent), ui(new Ui::MainW
   QShortcut * closeShortcut = new QShortcut(QKeySequence::Close, this);
   closeShortcut->setContext(Qt::ApplicationShortcut);
   connect(closeShortcut, &QShortcut::activated, this, &MainWindow::close);
+
+  QShortcut * previewTypeShortcut = new QShortcut(QKeySequence("Ctrl+Shift+P"), this);
+  previewTypeShortcut->setContext(Qt::ApplicationShortcut);
+  connect(previewTypeShortcut, &QShortcut::activated, this, &MainWindow::switchPreviewType);
 
   ui->tbRenameFave->setToolTip(tr("Rename fave"));
   ui->tbRenameFave->setEnabled(false);
@@ -213,6 +217,7 @@ MainWindow::MainWindow(QWidget * parent) : QMainWindow(parent), ui(new Ui::MainW
 
   loadSettings();
   ParametersCache::load(!_newSession);
+  FilterGuiDynamismCache::load();
   setIcons();
   QAction * escAction = new QAction(this);
   escAction->setShortcut(QKeySequence(Qt::Key_Escape));
@@ -238,6 +243,24 @@ MainWindow::MainWindow(QWidget * parent) : QMainWindow(parent), ui(new Ui::MainW
 
   ui->pbCancel->setEnabled(false);
 
+  ui->cbPreviewType->addItem(tr("Full"), int(PreviewWidget::PreviewType::Full));
+  ui->cbPreviewType->addItem(tr("Forward Horizontal"), int(PreviewWidget::PreviewType::ForwardHorizontal));
+  ui->cbPreviewType->addItem(tr("Forward Vertical"), int(PreviewWidget::PreviewType::ForwardVertical));
+  ui->cbPreviewType->addItem(tr("Backward Horizontal"), int(PreviewWidget::PreviewType::BackwardHorizontal));
+  ui->cbPreviewType->addItem(tr("Backward Vertical"), int(PreviewWidget::PreviewType::BackwardVertical));
+  ui->cbPreviewType->addItem(tr("Duplicate Top"), int(PreviewWidget::PreviewType::DuplicateTop));
+  ui->cbPreviewType->addItem(tr("Duplicate Left"), int(PreviewWidget::PreviewType::DuplicateLeft));
+  ui->cbPreviewType->addItem(tr("Duplicate Bottom"), int(PreviewWidget::PreviewType::DuplicateBottom));
+  ui->cbPreviewType->addItem(tr("Duplicate Right"), int(PreviewWidget::PreviewType::DuplicateRight));
+  ui->cbPreviewType->addItem(tr("Duplicate Horizontal"), int(PreviewWidget::PreviewType::DuplicateHorizontal));
+  ui->cbPreviewType->addItem(tr("Duplicate Vertical"), int(PreviewWidget::PreviewType::DuplicateVertical));
+  ui->cbPreviewType->addItem(tr("Checkered"), int(PreviewWidget::PreviewType::Checkered));
+  ui->cbPreviewType->addItem(tr("Checkered Inverse"), int(PreviewWidget::PreviewType::CheckeredInverse));
+  connect(ui->cbPreviewType, QOverload<int>::of(&QComboBox::currentIndexChanged), //
+          [this](int index) {                                                     //
+            ui->previewWidget->setPreviewType(PreviewWidget::PreviewType(ui->cbPreviewType->itemData(index).toInt()));
+          });
+
   makeConnections();
 }
 
@@ -245,6 +268,7 @@ MainWindow::~MainWindow()
 {
   saveCurrentParameters();
   ParametersCache::save();
+  FilterGuiDynamismCache::save();
   saveSettings();
   Logger::setMode(Logger::Mode::StandardOutput); // Close log file, if necessary
   delete ui;
@@ -260,6 +284,7 @@ void MainWindow::setIcons()
   ui->pbApply->setIcon(IconLoader::load("system-run"));
   ui->pbOk->setIcon(IconLoader::load("insert-image"));
   ui->tbResetParameters->setIcon(IconLoader::load("view-refresh"));
+  ui->tbRandomizeParameters->setIcon(IconLoader::load("randomize"));
   ui->tbCopyCommand->setIcon(IconLoader::load("edit-copy"));
   ui->pbClose->setIcon(IconLoader::load("close"));
   ui->pbCancel->setIcon(IconLoader::load("cancel"));
@@ -344,6 +369,8 @@ void MainWindow::onUpdateDownloadsFinished(int status)
 {
   ui->progressInfoWidget->stopAnimationAndHide();
 
+  buildFiltersTree();
+
   if (status == (int)Updater::UpdateStatus::SomeFailed) {
     if (!ui->progressInfoWidget->hasBeenCanceled()) {
       showUpdateErrors();
@@ -358,7 +385,6 @@ void MainWindow::onUpdateDownloadsFinished(int status)
     showMessage(tr("No download was needed."), 3000);
   }
 
-  buildFiltersTree();
   ui->tbUpdateFilters->setEnabled(true);
   if (_filtersPresenter->currentFilter().hash.isEmpty()) {
     setNoFilter();
@@ -642,6 +668,7 @@ void MainWindow::makeConnections()
   connect(ui->pbClose, &QPushButton::clicked, this, &MainWindow::close);
   connect(ui->pbApply, &QPushButton::clicked, this, &MainWindow::onApplyClicked);
   connect(ui->tbResetParameters, &QToolButton::clicked, this, &MainWindow::onReset);
+  connect(ui->tbRandomizeParameters, &QToolButton::clicked, this, &MainWindow::onRandomizeParameters);
   connect(ui->tbCopyCommand, &QToolButton::clicked, this, &MainWindow::onCopyGMICCommand);
   connect(ui->tbUpdateFilters, &QToolButton::clicked, this, &MainWindow::onUpdateFiltersClicked);
   connect(ui->pbSettings, &QPushButton::clicked, this, &MainWindow::onSettingsClicked);
@@ -664,6 +691,7 @@ void MainWindow::makeConnections()
   connect(ui->progressInfoWidget, &ProgressInfoWidget::canceled, this, &MainWindow::onProgressionWidgetCancelClicked);
   connect(ui->tbSelectionMode, &QToolButton::toggled, this, &MainWindow::onFiltersSelectionModeToggled);
   connect(&_processor, &GmicProcessor::previewImageAvailable, this, &MainWindow::onPreviewImageAvailable);
+  connect(&_processor, &GmicProcessor::guiDynamismRunDone, this, &MainWindow::onGUIDynamismRunDone);
   connect(&_processor, &GmicProcessor::previewCommandFailed, this, &MainWindow::onPreviewError);
   connect(&_processor, &GmicProcessor::fullImageProcessingFailed, this, &MainWindow::onFullImageProcessingError);
   connect(&_processor, &GmicProcessor::fullImageProcessingDone, this, &MainWindow::onFullImageProcessingDone);
@@ -678,22 +706,26 @@ void MainWindow::onPreviewUpdateRequested()
   onPreviewUpdateRequested(false);
 }
 
-void MainWindow::onPreviewUpdateRequested(bool synchronous)
+void MainWindow::onPreviewUpdateRequested(bool synchronous, bool randomized)
 {
-  if (!ui->cbPreview->isChecked()) {
-    ui->previewWidget->invalidateSavedPreview();
-    return;
-  }
-  _processor.init();
-  if (_filtersPresenter->currentFilter().isNoPreviewFilter()) {
+  const FiltersPresenter::Filter currentFilter = _filtersPresenter->currentFilter();
+  if (currentFilter.isNoPreviewFilter()) {
     ui->previewWidget->displayOriginalImage();
     return;
   }
+  FilterGuiDynamism dynamism = FilterGuiDynamismCache::getValue(currentFilter.hash);
+  if (!ui->cbPreview->isChecked() && (dynamism == FilterGuiDynamism::Static)) {
+    ui->previewWidget->invalidateSavedPreview();
+    return;
+  }
   ui->tbUpdateFilters->setEnabled(false);
-
-  const FiltersPresenter::Filter currentFilter = _filtersPresenter->currentFilter();
+  _processor.init();
   GmicProcessor::FilterContext context;
-  context.requestType = synchronous ? GmicProcessor::FilterContext::RequestType::SynchronousPreview : GmicProcessor::FilterContext::RequestType::Preview;
+  if (!ui->cbPreview->isChecked()) {
+    context.requestType = GmicProcessor::FilterContext::RequestType::GUIDynamismRun;
+  } else {
+    context.requestType = synchronous ? GmicProcessor::FilterContext::RequestType::SynchronousPreview : GmicProcessor::FilterContext::RequestType::Preview;
+  }
   GmicProcessor::FilterContext::VisibleRect & rect = context.visibleRect;
   ui->previewWidget->normalizedVisibleRect(rect.x, rect.y, rect.w, rect.h);
 
@@ -704,10 +736,12 @@ void MainWindow::onPreviewUpdateRequested(bool synchronous)
   context.previewWindowHeight = ui->previewWidget->height();
   context.previewTimeout = Settings::previewTimeout();
   // context.filterName = currentFilter.plainTextName; // Unused in this context
-  // context.filterHash = currentFilter.hash; // Unused in this context
+  context.filterHash = currentFilter.hash;
   context.filterCommand = currentFilter.previewCommand;
   context.filterArguments = ui->filterParams->valueString();
   context.previewFromFullImage = currentFilter.previewFromFullImage;
+  context.previewCheckBox = ui->cbPreview->isChecked();
+  context.randomized = randomized;
   _processor.setContext(context);
   _processor.execute();
 
@@ -752,6 +786,16 @@ void MainWindow::onPreviewImageAvailable()
   }
   ui->previewWidget->setPreviewImage(_processor.previewImage());
   ui->previewWidget->enableRightClick();
+  ui->tbUpdateFilters->setEnabled(true);
+}
+
+void MainWindow::onGUIDynamismRunDone()
+{
+  ui->filterParams->setValues(_processor.gmicStatus(), false);
+  ui->filterParams->setVisibilityStates(_processor.parametersVisibilityStates());
+  if (ui->filterParams->hasKeypoints()) {
+    ui->previewWidget->setKeypoints(ui->filterParams->keypoints());
+  }
   ui->tbUpdateFilters->setEnabled(true);
 }
 
@@ -802,6 +846,8 @@ void MainWindow::processImage()
   context.filterFullPath = currentFilter.fullPath;
   context.filterHash = currentFilter.hash;
   context.filterCommand = currentFilter.command;
+  context.previewCheckBox = ui->cbPreview->isChecked();
+  context.randomized = false;
   ui->filterParams->updateValueString(false); // Required to get up-to-date values of text parameters
   context.filterArguments = ui->filterParams->valueString();
   context.previewFromFullImage = false;
@@ -943,6 +989,21 @@ void MainWindow::onReset()
     PersistentMemory::clear();
     ui->filterParams->reset(true);
   }
+}
+
+void MainWindow::onRandomizeParameters()
+{
+  if (_filtersPresenter->currentFilter().isNoPreviewFilter()) {
+    return;
+  }
+  ui->filterParams->randomize();
+  if (ui->filterParams->hasKeypoints()) {
+    ui->previewWidget->setKeypoints(ui->filterParams->keypoints());
+  }
+  ui->previewWidget->invalidateSavedPreview();
+  clearMessage();
+  clearRightMessage();
+  onPreviewUpdateRequested(false, true);
 }
 
 void MainWindow::onCopyGMICCommand()
@@ -1190,6 +1251,7 @@ void MainWindow::activateFilter(bool resetZoom, const QList<QString> & values)
     ui->previewWidget->setKeypoints(KeypointList());
   } else {
     ui->previewWidget->setKeypoints(ui->filterParams->keypoints());
+    ui->tbRandomizeParameters->setEnabled(ui->filterParams->acceptRandom());
   }
   setFilterName(FilterTextTranslator::translate(filter.name));
   ui->inOutSelector->enable();
@@ -1226,6 +1288,7 @@ void MainWindow::activateFilter(bool resetZoom, const QList<QString> & values)
   setZoomConstraint();
   _okButtonShouldApply = true;
   ui->tbResetParameters->setVisible(true);
+  ui->tbRandomizeParameters->setVisible(true);
   ui->tbCopyCommand->setVisible(true);
   ui->tbRemoveFave->setEnabled(filter.isAFave);
   ui->tbRenameFave->setEnabled(filter.isAFave);
@@ -1243,6 +1306,7 @@ void MainWindow::setNoFilter()
   ui->tbAddFave->setEnabled(false);
   ui->tbCopyCommand->setVisible(false);
   ui->tbResetParameters->setVisible(false);
+  ui->tbRandomizeParameters->setVisible(false);
   ui->zoomLevelSelector->showWarning(false);
   _okButtonShouldApply = false;
   ui->tbRemoveFave->setEnabled(_filtersPresenter->danglingFaveIsSelected());
@@ -1428,6 +1492,36 @@ void MainWindow::abortProcessingOnCloseRequest()
 
   _processor.detachAllUnfinishedAbortedThreads(); // Keep only one thread in list after next line
   _processor.cancel();
+}
+
+void MainWindow::selectPreviewType(PreviewWidget::PreviewType previewType)
+{
+
+  if (ui->previewWidget->previewType() == PreviewWidget::PreviewType::Full) {
+    for (int index = 0; index < ui->cbPreviewType->count(); ++index) {
+      if (previewType == static_cast<PreviewWidget::PreviewType>(ui->cbPreviewType->itemData(index).toInt())) {
+        ui->cbPreviewType->setCurrentIndex(index);
+        return;
+      }
+    }
+  } else {
+    for (int index = 0; index < ui->cbPreviewType->count(); ++index) {
+      if (PreviewWidget::PreviewType::Full == static_cast<PreviewWidget::PreviewType>(ui->cbPreviewType->itemData(index).toInt())) {
+        ui->cbPreviewType->setCurrentIndex(index);
+        return;
+      }
+    }
+  }
+}
+
+void MainWindow::switchPreviewType()
+{
+  ui->cbPreview->setChecked(true);
+  if (ui->previewWidget->previewType() == PreviewWidget::PreviewType::Full) {
+    selectPreviewType(ui->previewWidget->savedPreviewType());
+  } else {
+    selectPreviewType(PreviewWidget::PreviewType::Full);
+  }
 }
 
 void MainWindow::onCancelClicked()

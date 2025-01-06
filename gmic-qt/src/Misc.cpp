@@ -28,6 +28,7 @@
 #include <QChar>
 #include <QDebug>
 #include <QMap>
+#include <QRandomGenerator>
 #include <QRegularExpression>
 #include <QString>
 #include <QStringList>
@@ -370,7 +371,7 @@ QStringList quotedStringList(const QStringList & stringList)
 QString unescaped(const QString & text)
 {
   QByteArray ba = text.toUtf8();
-  gmic_library::cimg::strunescape(ba.data());
+  if (ba.data() && *ba.data()) gmic_library::cimg::strunescape(ba.data());
   return QString::fromUtf8(ba.data());
 }
 
@@ -436,6 +437,15 @@ QString readableSize(quint64 n)
   } else {
     return QString(QObject::tr("%1 B")).arg(n);
   }
+}
+
+qreal randomReal(qreal lowest, qreal highest)
+{
+  QRandomGenerator * rng = QRandomGenerator::global();
+  auto min = rng->min();
+  auto max = rng->max();
+  auto t = (rng->generate() - min) / double(max - min);
+  return (1 - t) * lowest + t * highest;
 }
 
 } // namespace GmicQt

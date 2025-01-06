@@ -33,7 +33,7 @@
 #include <QWidget>
 #include "Common.h"
 #include "GmicProcessor.h"
-#include "Updater.h"
+#include "Widgets/PreviewWidget.h"
 class QResizeEvent;
 
 namespace Ui
@@ -78,7 +78,7 @@ public slots:
   void onUpdateDownloadsFinished(int status);
   void onApplyClicked();
   void onProgressionWidgetCancelClicked();
-  void onPreviewUpdateRequested(bool synchronous);
+  void onPreviewUpdateRequested(bool synchronous, bool randomized = false);
   void onPreviewUpdateRequested();
   void onPreviewKeypointsEvent(unsigned int flags, unsigned long time);
   void onFullImageProcessingDone();
@@ -87,6 +87,7 @@ public slots:
   void onOkClicked();
   void onCancelClicked();
   void onReset();
+  void onRandomizeParameters();
   void onCopyGMICCommand();
   void onPreviewZoomReset();
   void onUpdateFiltersClicked();
@@ -104,6 +105,7 @@ public slots:
   void onFilterSelectionChanged();
   void onEscapeKeyPressed();
   void onPreviewImageAvailable();
+  void onGUIDynamismRunDone();
   void onPreviewError(const QString & message);
   void onParametersChanged();
   static bool isAccepted();
@@ -146,6 +148,8 @@ private:
   static QString screenGeometries();
   void updateFilters(bool internet);
   void abortProcessingOnCloseRequest();
+  void selectPreviewType(PreviewWidget::PreviewType previewType);
+  void switchPreviewType();
   enum class ProcessingAction
   {
     NoAction,

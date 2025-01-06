@@ -37,6 +37,7 @@
 #include "Globals.h"
 #include "HtmlTranslator.h"
 #include "Logger.h"
+#include "Misc.h"
 #include "Settings.h"
 
 namespace GmicQt
@@ -136,6 +137,17 @@ void FloatParameter::reset()
   _slider->setValue(static_cast<int>(SLIDER_MAX_RANGE * (_value - _min) / (_max - _min)));
   _spinBox->setValue((double)_default);
   connectSliderSpinBox();
+}
+
+void FloatParameter::randomize()
+{
+  if (acceptRandom()) {
+    disconnectSliderSpinBox();
+    _value = randomReal(_min, _max);
+    _slider->setValue(static_cast<int>(SLIDER_MAX_RANGE * (_value - _min) / (_max - _min)));
+    _spinBox->setValue(_value);
+    connectSliderSpinBox();
+  }
 }
 
 bool FloatParameter::initFromText(const QString & filterName, const char * text, int & textLength)

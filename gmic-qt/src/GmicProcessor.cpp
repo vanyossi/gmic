@@ -33,6 +33,7 @@
 #include <cstring>
 #include "CroppedActiveLayerProxy.h"
 #include "CroppedImageListProxy.h"
+#include "FilterGuiDynamismCache.h"
 #include "FilterSyncRunner.h"
 #include "FilterThread.h"
 #include "Globals.h"
@@ -89,8 +90,9 @@ void GmicProcessor::execute()
   gmic_list<char> imageNames;
   FilterContext::VisibleRect & rect = _filterContext.visibleRect;
   _gmicImages->assign();
-  if ((_filterContext.requestType == FilterContext::RequestType::Preview) || //
-      (_filterContext.requestType == FilterContext::RequestType::SynchronousPreview)) {
+  if ((_filterContext.requestType == FilterContext::RequestType::Preview) ||            //
+      (_filterContext.requestType == FilterContext::RequestType::SynchronousPreview) || //
+      (_filterContext.requestType == FilterContext::RequestType::GUIDynamismRun)) {
     if (_filterContext.previewFromFullImage) {
       CroppedImageListProxy::get(*_gmicImages, imageNames, 0.0, 0.0, 1.0, 1.0, _filterContext.inputOutputState.inputMode, 1.0);
       updateImageNames(imageNames);
@@ -111,6 +113,8 @@ void GmicProcessor::execute()
     env += QString(" _preview_area_width=%1").arg(_filterContext.previewWindowWidth);
     env += QString(" _preview_area_height=%1").arg(_filterContext.previewWindowHeight);
     env += QString(" _preview_timeout=%1").arg(_filterContext.previewTimeout);
+    env += QString(" _preview_enabled=%1").arg(int(_filterContext.previewCheckBox));
+    env += QString(" _randomized=%1").arg(int(_filterContext.randomized));
   }
   int maxWidth;
   int maxHeight;
@@ -159,12 +163,17 @@ void GmicProcessor::execute()
     runner.run();
     manageSynchonousRunner(runner);
     recordPreviewFilterExecutionDurationMS((int)_ongoingFilterExecutionTime.elapsed());
-  } else if (_filterContext.requestType == FilterContext::RequestType::Preview) {
+  } else if ((_filterContext.requestType == FilterContext::RequestType::Preview) || //
+             (_filterContext.requestType == FilterContext::RequestType::GUIDynamismRun)) {
     _filterThread = new FilterThread(this, _filterContext.filterCommand, _filterContext.filterArguments, env);
     _filterThread->swapImages(*_gmicImages);
     _filterThread->setImageNames(imageNames);
     _filterThread->setLogSuffix("preview");
-    connect(_filterThread, &FilterThread::finished, this, &GmicProcessor::onPreviewThreadFinished, Qt::QueuedConnection);
+    if (_filterContext.requestType == FilterContext::RequestType::Preview) {
+      connect(_filterThread, &FilterThread::finished, this, &GmicProcessor::onPreviewThreadFinished, Qt::QueuedConnection);
+    } else {
+      connect(_filterThread, &FilterThread::finished, this, &GmicProcessor::onGUIDynamismThreadFinished, Qt::QueuedConnection);
+    }
     gmic_library::cimg::srand();
     _previewRandomSeed = gmic_library::cimg::_rand();
     _ongoingFilterExecutionTime.restart();
@@ -291,7 +300,7 @@ void GmicProcessor::terminateAllThreads()
     _unfinishedAbortedThreads.pop_front();
   }
   _waitingCursorTimer.stop();
-  OverrideCursor::setWaiting(false);
+  OverrideCursor::setNormal();
 }
 
 bool GmicProcessor::hasUnfinishedAbortedThreads() const
@@ -337,6 +346,34 @@ void GmicProcessor::setGmicStatusQuotedParameters(const QVector<bool> & quotedPa
   _gmicStatusQuotedParameters = quotedParameters;
 }
 
+void GmicProcessor::onGUIDynamismThreadFinished()
+{
+  Q_ASSERT_X(_filterThread, __PRETTY_FUNCTION__, "No filter thread");
+  if (_filterThread->isRunning()) {
+    return;
+  }
+  if (_filterThread->failed()) {
+    _gmicStatus.clear();
+    _parametersVisibilityStates.clear();
+    _gmicImages->assign();
+    QString message = _filterThread->errorMessage();
+    _filterThread->deleteLater();
+    _filterThread = nullptr;
+    hideWaitingCursor();
+    Logger::warning(QString("Failed to execute filter: %1").arg(message));
+    return;
+  }
+  _gmicStatus = _filterThread->gmicStatus();
+  _parametersVisibilityStates = _filterThread->parametersVisibilityStates();
+  _gmicImages->assign();
+  FilterGuiDynamismCache::setValue(_filterContext.filterHash, _gmicStatus.isEmpty() ? FilterGuiDynamism::Static : FilterGuiDynamism::Dynamic);
+  PersistentMemory::move_from(_filterThread->persistentMemoryOutput());
+  _filterThread->deleteLater();
+  _filterThread = nullptr;
+  hideWaitingCursor();
+  emit guiDynamismRunDone();
+}
+
 void GmicProcessor::onPreviewThreadFinished()
 {
   Q_ASSERT_X(_filterThread, __PRETTY_FUNCTION__, "No filter thread");
@@ -358,6 +395,7 @@ void GmicProcessor::onPreviewThreadFinished()
   _gmicStatus = _filterThread->gmicStatus();
   _parametersVisibilityStates = _filterThread->parametersVisibilityStates();
   _gmicImages->assign();
+  FilterGuiDynamismCache::setValue(_filterContext.filterHash, _gmicStatus.isEmpty() ? FilterGuiDynamism::Static : FilterGuiDynamism::Dynamic);
   _filterThread->swapImages(*_gmicImages);
   PersistentMemory::move_from(_filterThread->persistentMemoryOutput());
   unsigned int badSpectrumIndex = 0;
@@ -445,14 +483,14 @@ void GmicProcessor::onAbortedThreadFinished()
 void GmicProcessor::showWaitingCursor()
 {
   if (_filterThread) {
-    OverrideCursor::setWaiting(true);
+    OverrideCursor::set(Qt::WaitCursor);
   }
 }
 
 void GmicProcessor::hideWaitingCursor()
 {
   _waitingCursorTimer.stop();
-  OverrideCursor::setWaiting(false);
+  OverrideCursor::setNormal();
 }
 
 void GmicProcessor::updateImageNames(gmic_list<char> & imageNames)
@@ -490,7 +528,7 @@ void GmicProcessor::abortCurrentFilterThread()
   _filterThread->abortGmic();
   _filterThread = nullptr;
   _waitingCursorTimer.stop();
-  OverrideCursor::setWaiting(false);
+  OverrideCursor::setNormal();
 }
 
 void GmicProcessor::manageSynchonousRunner(FilterSyncRunner & runner)

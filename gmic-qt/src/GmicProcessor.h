@@ -57,7 +57,8 @@ public:
     {
       SynchronousPreview,
       Preview,
-      FullImage
+      FullImage,
+      GUIDynamismRun
     };
     struct VisibleRect {
       double x, y, w, h;
@@ -75,6 +76,8 @@ public:
     int previewWindowHeight;
     int previewTimeout;
     bool previewFromFullImage = false;
+    bool previewCheckBox;
+    bool randomized;
     QString filterName;
     QString filterCommand;
     QString filterFullPath;
@@ -118,6 +121,7 @@ signals:
   void previewCommandFailed(QString errorMessage);
   void fullImageProcessingFailed(QString errorMessage);
   void previewImageAvailable();
+  void guiDynamismRunDone();
   void fullImageProcessingDone();
   void noMoreUnfinishedJobs();
   void aboutToSendImagesToHost();
@@ -125,6 +129,7 @@ signals:
 private slots:
   void onPreviewThreadFinished();
   void onApplyThreadFinished();
+  void onGUIDynamismThreadFinished();
   void onAbortedThreadFinished();
   void showWaitingCursor();
   void hideWaitingCursor();
