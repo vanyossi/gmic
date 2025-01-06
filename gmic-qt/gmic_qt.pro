@@ -1,6 +1,6 @@
 #
 # Set HOST variable to define target host software.
-# Possible values are "none", "gimp", "gimp3" (experimental), and "paintdotnet"
+# Possible values are "none", "gimp", and "paintdotnet"
 #
 #
 
@@ -55,7 +55,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 TEMPLATE = app
 QT += widgets network
-CONFIG	+= qt c++17
+CONFIG	+= qt c++17 strict_c++
 CONFIG	+= warn_on
 QT_CONFIG -= no-pkg-config
 CONFIG += link_pkgconfig
@@ -64,11 +64,9 @@ VERSION = 0.0.0
 PKGCONFIG += fftw3 zlib libpng libjpeg libcurl
 
 equals( HOST, "gimp" ) {
-  PKGCONFIG += gimp-2.0
-}
-
-equals( HOST, "gimp3" ) {
-  PKGCONFIG += gimp-3.0
+  GIMP_VERSION = $$system(bash check_versions.sh . gimp)
+  message("GIMP major version is ............" $$GIMP_VERSION)
+  PKGCONFIG += gimp-$${GIMP_VERSION}.0
 }
 
 equals( HOST, "8bf") {
@@ -170,25 +168,33 @@ equals( COMPILER, "clang" ) {
 
 LIBS += -lfftw3_threads
 
-!win32 {
- DEFINES += cimg_display=1
-}
-
 win32 {
- DEFINES += _IS_WINDOWS_
- LIBS += -mwindows -lpthread -DPSAPI_VERSION=1 -lpsapi -lgdi32
- DEFINES += cimg_display=2
+  DEFINES += _IS_WINDOWS_
+  DEFINES += cimg_display=2
+  LIBS += -mwindows -lpthread -DPSAPI_VERSION=1 -lpsapi -lgdi32 -Wl,--stack,16777216
+  message( Windows/GDI32 platform )
 }
 
 unix:!macx {
   DEFINES += _IS_UNIX_
+  DEFINES += cimg_display=1
   PKGCONFIG += x11
-  message( Unix platform )
+  message( Unix/X11 platform )
 }
 
-macx {  DEFINES += _IS_MACOS_ }
+macx {
+  DEFINES += _IS_MACOS_
+  DEFINES += cimg_display=0
+  ICON = icons/application/gmic_qt.icns
+  message( macOS platform )
+}
 
-equals( HOST, "gimp")|equals( HOST, "gimp3") {
+!win32:!unix:!macx {
+  DEFINES += cimg_display=0
+  message( Unknown platform )
+}
+
+equals( HOST, "gimp") {
  TARGET = gmic_gimp_qt
  SOURCES += src/Host/Gimp/host_gimp.cpp
  DEFINES += GMIC_HOST=gimp
@@ -311,6 +317,7 @@ HEADERS +=  \
   src/FilterSelector/FilterTagMap.h \
   src/CroppedImageListProxy.h \
   src/CroppedActiveLayerProxy.h \
+  src/FilterGuiDynamismCache.h \
   src/FilterSyncRunner.h \
   src/FilterThread.h \
   src/FilterTextTranslator.h \
@@ -391,6 +398,7 @@ SOURCES += \
   src/FilterSelector/FilterTagMap.cpp \
   src/CroppedImageListProxy.cpp \
   src/CroppedActiveLayerProxy.cpp \
+  src/FilterGuiDynamismCache.cpp \
   src/FilterSyncRunner.cpp \
   src/FilterThread.cpp \
   src/FilterTextTranslator.cpp \

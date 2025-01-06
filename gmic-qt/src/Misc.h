@@ -79,6 +79,8 @@ inline QString elided80(const std::string & text)
   return elided(QString::fromStdString(text), 80);
 }
 
+qreal randomReal(qreal lowest, qreal highest);
+
 QString readableDuration(qint64 ms);
 
 QString readableSize(quint64);
@@ -107,6 +109,11 @@ inline bool notEmpty(const QString & text)
 inline bool notEmpty(const std::string & text)
 {
   return !text.empty();
+}
+
+template <typename T> T clamped(const T & value, const T & min, const T & max)
+{
+  return (value < min) ? min : (value > max) ? max : value;
 }
 
 } // namespace GmicQt

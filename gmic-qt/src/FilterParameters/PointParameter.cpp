@@ -42,6 +42,7 @@
 #include "FilterTextTranslator.h"
 #include "HtmlTranslator.h"
 #include "KeypointList.h"
+#include "Misc.h"
 #include "Settings.h"
 
 namespace GmicQt
@@ -232,6 +233,19 @@ void PointParameter::reset()
   enableNotifications(true);
 }
 
+void PointParameter::randomize()
+{
+  if (acceptRandom()) {
+    _position = QPointF(randomReal(0.0, 100.0), randomReal(0.0, 100.0));
+    if (_spinBoxX) {
+      disconnectSpinboxes();
+      _spinBoxX->setValue(_position.rx());
+      _spinBoxY->setValue(_position.ry());
+      connectSpinboxes();
+    }
+  }
+}
+
 // P = point(x,y,removable{(0),1},burst{(0),1},r,g,b,a{negative->keepOpacityWhenSelected},radius,widget_visible{0|(1)})
 bool PointParameter::initFromText(const QString & filterName, const char * text, int & textLength)
 {
@@ -240,13 +254,9 @@ bool PointParameter::initFromText(const QString & filterName, const char * text,
     return false;
   }
   _name = HtmlTranslator::html2txt(FilterTextTranslator::translate(list[0], filterName));
-  QList<QString> params = list[1].split(",");
+  QList<QString> params = list[1].split(",", QT_SKIP_EMPTY_PARTS);
 
   bool ok = true;
-
-  _defaultPosition.setX(50.0);
-  _defaultPosition.setY(50.0);
-  _defaultPosition = _position;
   _color.setRgb(255, 255, 255, 255);
   _burst = false;
   _removable = false;

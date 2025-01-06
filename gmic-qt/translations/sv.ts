@@ -153,7 +153,7 @@
 <context>
     <name>GmicQt::ColorParameter</name>
     <message>
-        <location filename="../src/FilterParameters/ColorParameter.cpp" line="200"/>
+        <location filename="../src/FilterParameters/ColorParameter.cpp" line="213"/>
         <source>Select color</source>
         <translation>Välj färg</translation>
     </message>
@@ -259,18 +259,18 @@
 <context>
     <name>GmicQt::FilterParametersWidget</name>
     <message>
-        <location filename="../src/FilterParameters/FilterParametersWidget.cpp" line="43"/>
-        <location filename="../src/FilterParameters/FilterParametersWidget.cpp" line="255"/>
+        <location filename="../src/FilterParameters/FilterParametersWidget.cpp" line="44"/>
+        <location filename="../src/FilterParameters/FilterParametersWidget.cpp" line="273"/>
         <source>&lt;i&gt;Select a filter&lt;/i&gt;</source>
         <translation>&lt;i&gt;Välj ett filter&lt;/i&gt;</translation>
     </message>
     <message>
-        <location filename="../src/FilterParameters/FilterParametersWidget.cpp" line="222"/>
+        <location filename="../src/FilterParameters/FilterParametersWidget.cpp" line="240"/>
         <source>&lt;i&gt;No parameters&lt;/i&gt;</source>
         <translation>&lt;i&gt;Inga parametrar&lt;/i&gt;</translation>
     </message>
     <message>
-        <location filename="../src/FilterParameters/FilterParametersWidget.cpp" line="227"/>
+        <location filename="../src/FilterParameters/FilterParametersWidget.cpp" line="245"/>
         <source>Error parsing filter parameters
 
 </source>
@@ -280,12 +280,12 @@
 <context>
     <name>GmicQt::FiltersPresenter</name>
     <message>
-        <location filename="../src/FilterSelector/FiltersPresenter.cpp" line="510"/>
+        <location filename="../src/FilterSelector/FiltersPresenter.cpp" line="513"/>
         <source>Unknown filter</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/FilterSelector/FiltersPresenter.cpp" line="620"/>
+        <location filename="../src/FilterSelector/FiltersPresenter.cpp" line="623"/>
         <source>Cannot find this fave&apos;s original filter
 </source>
         <translation type="unfinished"></translation>
@@ -361,12 +361,12 @@
 <context>
     <name>GmicQt::GmicProcessor</name>
     <message>
-        <location filename="../src/GmicProcessor.cpp" line="378"/>
+        <location filename="../src/GmicProcessor.cpp" line="416"/>
         <source>Image #%1 returned by filter has %2 channels (should be at most 4)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/GmicProcessor.cpp" line="414"/>
+        <location filename="../src/GmicProcessor.cpp" line="452"/>
         <source>Image #%1 returned by filter has %2 channels
 (should be at most 4)</source>
         <translation type="unfinished"></translation>
@@ -515,14 +515,19 @@ Cannot retrieve default parameters.
 <context>
     <name>GmicQt::MainWindow</name>
     <message>
-        <location filename="../src/MainWindow.cpp" line="111"/>
+        <location filename="../src/MainWindow.cpp" line="108"/>
         <source>Add fave</source>
         <translation>Lägg till fave</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="113"/>
+        <location filename="../src/MainWindow.cpp" line="110"/>
         <source>Reset parameters to default values</source>
         <translation>Återställ parametrarna till standardvärden</translation>
+    </message>
+    <message>
+        <location filename="../src/MainWindow.cpp" line="113"/>
+        <source>Randomize parameters</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/MainWindow.cpp" line="119"/>
@@ -560,43 +565,108 @@ Cannot retrieve default parameters.
         <translation>Uppdatera filter</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="231"/>
+        <location filename="../src/MainWindow.cpp" line="232"/>
         <source>Manage visible tags
 (Right-click on a fave or a filter to set/remove tags)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="237"/>
+        <location filename="../src/MainWindow.cpp" line="238"/>
         <source>Force &amp;quit</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="353"/>
+        <location filename="../src/MainWindow.cpp" line="242"/>
+        <source>Full</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/MainWindow.cpp" line="243"/>
+        <source>Forward Horizontal</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/MainWindow.cpp" line="244"/>
+        <source>Forward Vertical</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/MainWindow.cpp" line="245"/>
+        <source>Backward Horizontal</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/MainWindow.cpp" line="246"/>
+        <source>Backward Vertical</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/MainWindow.cpp" line="247"/>
+        <source>Duplicate Top</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/MainWindow.cpp" line="248"/>
+        <source>Duplicate Left</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/MainWindow.cpp" line="249"/>
+        <source>Duplicate Bottom</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/MainWindow.cpp" line="250"/>
+        <source>Duplicate Right</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/MainWindow.cpp" line="251"/>
+        <source>Duplicate Horizontal</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/MainWindow.cpp" line="252"/>
+        <source>Duplicate Vertical</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/MainWindow.cpp" line="253"/>
+        <source>Checkered</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/MainWindow.cpp" line="254"/>
+        <source>Checkered Inverse</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/MainWindow.cpp" line="376"/>
         <source>Update completed</source>
         <translation>Uppdateringen slutförd</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="353"/>
-        <location filename="../src/MainWindow.cpp" line="355"/>
-        <location filename="../src/MainWindow.cpp" line="487"/>
+        <location filename="../src/MainWindow.cpp" line="376"/>
+        <location filename="../src/MainWindow.cpp" line="378"/>
+        <location filename="../src/MainWindow.cpp" line="509"/>
         <source>Filter definitions have been updated.</source>
         <translation>Filterdefinitioner har uppdaterats.</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="358"/>
+        <location filename="../src/MainWindow.cpp" line="381"/>
         <source>No download was needed.</source>
         <translation>Inga nerladdningar behövs.</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="405"/>
+        <location filename="../src/MainWindow.cpp" line="427"/>
         <source>Plugin was called with a filter path with no matching filter:
 
 Path: %1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="413"/>
-        <location filename="../src/MainWindow.cpp" line="440"/>
+        <location filename="../src/MainWindow.cpp" line="435"/>
+        <location filename="../src/MainWindow.cpp" line="462"/>
         <source>Error parsing filter parameters definition for filter:
 
 %1
@@ -607,26 +677,26 @@ Cannot retrieve default parameters.
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="426"/>
+        <location filename="../src/MainWindow.cpp" line="448"/>
         <source>Plugin was called with a command that cannot be recognized as a filter:
 
 Command: %1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="885"/>
+        <location filename="../src/MainWindow.cpp" line="927"/>
         <source>[Elapsed time: %1]</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="421"/>
+        <location filename="../src/MainWindow.cpp" line="443"/>
         <source>Plugin was called with a command that cannot be parsed:
 
 %1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="430"/>
+        <location filename="../src/MainWindow.cpp" line="452"/>
         <source>Plugin was called with a command that does not match the provided path:
 
 Path: %1
@@ -635,52 +705,52 @@ Command found for this path : %3</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="483"/>
+        <location filename="../src/MainWindow.cpp" line="505"/>
         <source>Filters update could not be achieved</source>
         <translation>Filteruppdatering kunde inte utföras</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="624"/>
+        <location filename="../src/MainWindow.cpp" line="646"/>
         <source>The update could not be achieved&lt;br&gt;because of the following errors:&lt;br&gt;</source>
         <translation>Uppdateringen kunde inte uppnås&lt;br/&gt;på grund av följande fel:&lt;br/&gt;</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="630"/>
+        <location filename="../src/MainWindow.cpp" line="652"/>
         <source>Update error</source>
         <translation>Uppdateringsfel</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="817"/>
+        <location filename="../src/MainWindow.cpp" line="859"/>
         <source>Error</source>
         <translation>Fel</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1419"/>
+        <location filename="../src/MainWindow.cpp" line="1478"/>
         <source>Waiting for cancelled jobs...</source>
         <translation>Väntar på avbrutet arbete...</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1273"/>
+        <location filename="../src/MainWindow.cpp" line="1332"/>
         <source>Import faves</source>
         <translation>Importera faves</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1273"/>
+        <location filename="../src/MainWindow.cpp" line="1332"/>
         <source>Do you want to import faves from file below?&lt;br/&gt;%1</source>
         <translation>Vill du importera faves från filen nedan?&lt;br/&gt;%1</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1276"/>
+        <location filename="../src/MainWindow.cpp" line="1335"/>
         <source>Don&apos;t ask again</source>
         <translation>Fråga inte igen</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1395"/>
+        <location filename="../src/MainWindow.cpp" line="1454"/>
         <source>Confirmation</source>
         <translation>Bekräfta</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1395"/>
+        <location filename="../src/MainWindow.cpp" line="1454"/>
         <source>A gmic command is running.&lt;br&gt;Do you really want to close the plugin?</source>
         <translation>Ett g&apos;mic-kommando körs.&lt;br&gt;Vill du verkligen stänga plugin-programmet?</translation>
     </message>
@@ -1025,52 +1095,58 @@ VERSION is also a predefined variable that stands for the G&apos;MIC version num
     <message>
         <location filename="../ui/mainwindow.ui" line="248"/>
         <location filename="../ui/mainwindow.ui" line="255"/>
+        <location filename="../ui/mainwindow.ui" line="262"/>
         <source>...</source>
         <translation>...</translation>
     </message>
     <message>
-        <location filename="../ui/mainwindow.ui" line="401"/>
+        <location filename="../ui/mainwindow.ui" line="408"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Enable/disable preview&lt;br/&gt;(Ctrl+P)&lt;br/&gt;(right click on preview image for instant swapping)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation>&gt;&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Enable/disable preview&lt;br/&gt;(Ctrl+P)&lt;br/&gt;(högerklicka på förhandsgranskningsbild för omedelbar byte)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
-        <location filename="../ui/mainwindow.ui" line="404"/>
+        <location filename="../ui/mainwindow.ui" line="411"/>
         <source>Preview</source>
         <translation>Preview</translation>
     </message>
     <message>
-        <location filename="../ui/mainwindow.ui" line="495"/>
+        <location filename="../ui/mainwindow.ui" line="509"/>
         <source>&amp;Settings...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/mainwindow.ui" line="511"/>
-        <location filename="../ui/mainwindow.ui" line="518"/>
+        <location filename="../ui/mainwindow.ui" line="525"/>
+        <location filename="../ui/mainwindow.ui" line="532"/>
         <source>TextLabel</source>
         <translation>Textetikett</translation>
     </message>
     <message>
-        <location filename="../ui/mainwindow.ui" line="544"/>
+        <location filename="../ui/mainwindow.ui" line="558"/>
         <source>&amp;Close</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/mainwindow.ui" line="557"/>
+        <location filename="../ui/mainwindow.ui" line="571"/>
         <source>&amp;Cancel</source>
         <translation>&amp;Avbryt</translation>
     </message>
     <message>
-        <location filename="../ui/mainwindow.ui" line="531"/>
+        <location filename="../ui/mainwindow.ui" line="545"/>
         <source>&amp;Fullscreen</source>
         <translation>&amp;Fullskärm</translation>
     </message>
     <message>
-        <location filename="../ui/mainwindow.ui" line="570"/>
+        <location filename="../ui/mainwindow.ui" line="418"/>
+        <source>Preview type (Ctrl+Shift+P)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/mainwindow.ui" line="584"/>
         <source>&amp;Apply</source>
         <translation>&amp;Tillämpa</translation>
     </message>
     <message>
-        <location filename="../ui/mainwindow.ui" line="583"/>
+        <location filename="../ui/mainwindow.ui" line="597"/>
         <source>&amp;OK</source>
         <translation>&amp;OK</translation>
     </message>
@@ -1133,7 +1209,7 @@ VERSION is also a predefined variable that stands for the G&apos;MIC version num
         <translation>Synlig</translation>
     </message>
     <message>
-        <location filename="../src/FilterSelector/FiltersPresenter.cpp" line="106"/>
+        <location filename="../src/FilterSelector/FiltersPresenter.cpp" line="107"/>
         <source>Available filters (%1)</source>
         <translation>Tillgängliga filter (%1)</translation>
     </message>
@@ -1208,27 +1284,27 @@ VERSION is also a predefined variable that stands for the G&apos;MIC version num
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/Misc.cpp" line="336"/>
+        <location filename="../src/Misc.cpp" line="337"/>
         <source>List %1 cannot be merged considering these runs: %2</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/Misc.cpp" line="431"/>
+        <location filename="../src/Misc.cpp" line="432"/>
         <source>%1 GiB</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/Misc.cpp" line="433"/>
+        <location filename="../src/Misc.cpp" line="434"/>
         <source>%1 MiB</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/Misc.cpp" line="435"/>
+        <location filename="../src/Misc.cpp" line="436"/>
         <source>%1 KiB</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/Misc.cpp" line="437"/>
+        <location filename="../src/Misc.cpp" line="438"/>
         <source>%1 B</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1305,11 +1381,11 @@ VERSION is also a predefined variable that stands for the G&apos;MIC version num
     </message>
     <message>
         <location filename="../src/Host/None/ImageDialog.cpp" line="122"/>
-        <source>%1 file (*.%2)</source>
+        <source>%1 file (*.%2 *.%3)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/Host/None/ImageDialog.cpp" line="144"/>
+        <location filename="../src/Host/None/ImageDialog.cpp" line="148"/>
         <source>Save image as...</source>
         <translation type="unfinished"></translation>
     </message>

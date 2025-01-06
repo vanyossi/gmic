@@ -47,11 +47,14 @@ public:
   void setValue(const QString &) override;
   void clear() override;
   void reset() override;
+  void randomize() override;
   bool initFromText(const QString & filterName, const char * text, int & textLength) override;
 public slots:
   void onPushButtonClicked(bool);
 
 private:
+  void connectButton();
+  void disconnectButton();
   bool _value;
   QString _text;
   QPushButton * _pushButton;
