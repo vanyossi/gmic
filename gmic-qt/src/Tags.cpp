@@ -36,6 +36,10 @@
 #include "Common.h"
 #include "Settings.h"
 
+#ifdef _GMIC_HOSTED_PLUGIN_
+#include <QApplication>
+#endif
+
 namespace GmicQt
 {
 
