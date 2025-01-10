@@ -281,28 +281,11 @@ endif()
 # add all defines
 #
 
-if (QT_NO_CREATE_VERSIONLESS_FUNCTIONS)
-  set(gmic_qt_LIBRARIES
-          Qt${QT_VERSION_MAJOR}::Core
-          Qt${QT_VERSION_MAJOR}::Widgets
-          Qt${QT_VERSION_MAJOR}::Gui
-          Qt${QT_VERSION_MAJOR}::Network
-  )
-else()
-  set(gmic_qt_LIBRARIES
-          Qt::Core
-          Qt::Widgets
-          Qt::Gui
-          Qt::Network
-  )
-endif()
-
 set(gmic_qt_LIBRARIES
         Qt${QT_VERSION_MAJOR}::Core
         Qt${QT_VERSION_MAJOR}::Widgets
         Qt${QT_VERSION_MAJOR}::Gui
         Qt${QT_VERSION_MAJOR}::Network
-        ${gmic_qt_LIBRARIES}
         ${PNG_LIBRARIES}
         ${FFTW3_LIBRARIES}
         ${ZLIB_LIBRARIES}
