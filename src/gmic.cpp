@@ -2438,7 +2438,7 @@ static void *gmic_parallel(void *arg) {
 const char *gmic::builtin_command_names[] = {
 
   // Commands of length>3.
-  "acos","acosh","add3d","append","asin","asinh","atan","atan2","atanh",
+  "abscut","acos","acosh","add3d","append","asin","asinh","atan","atan2","atanh",
   "bilateral","blur","boxfilter","break",
   "camera","check","check3d","command","continue","convolve","correlate","cosh","crop","cumulate","cursor",
   "debug","delete","denoise","deriche","dilate","discard","displacement","distance","div3d","done",
@@ -5669,6 +5669,28 @@ gmic& gmic::_run(const CImgList<char>& command_line, unsigned int& position,
 
         // Absolute value.
         gmic_simple_command("abs",abs,"Compute pointwise absolute value of image%s.");
+
+        // Absolute value cut.
+        if (!std::strcmp("abscut",command)) {
+          gmic_substitute_args(false);
+          vmin = -cimg::type<double>::inf();
+          vmax = cimg::type<double>::inf();
+          value = 0;
+          if (cimg_sscanf(argument,"%lf%c",
+                          &vmin,&end)==1 ||
+              cimg_sscanf(argument,"%lf,%lf%c",
+                          &vmin,&vmax,&end)==2 ||
+              cimg_sscanf(argument,"%lf,%lf,%lf%c",
+                          &vmin,&vmax,&value,&end)==3) {
+            print(0,"Cut absolute values of image%s in range [%g,%g], with offset %g.",
+                  gmic_selection.data(),
+                  vmin,vmax,value);
+            cimg_forY(selection,l) gmic_apply(abscut(vmin,vmax,value),true);
+          } else arg_error("abscut");
+          is_change = true;
+          ++position;
+          continue;
+        }
 
         // Bitwise and.
         gmic_arithmetic_command("and",
