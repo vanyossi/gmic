@@ -1,8 +1,9 @@
+cmake_minimum_required(VERSION 3.16.0 FATAL_ERROR)
+
 project(gmic-qt)
 
 message(STATUS "Using CMake version: ${CMAKE_VERSION}")
 
-cmake_minimum_required(VERSION 3.10.0 FATAL_ERROR)
 LIST (APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules")
 include(FeatureSummary)
 include(FindPkgConfig)
