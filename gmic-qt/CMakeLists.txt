@@ -10,14 +10,6 @@ include(FindPkgConfig)
 set(CMAKE_CXX_STANDARD 11)
 add_definitions(-Dcimg_use_cpp11=1)
 
-option(BUILD_WITH_QT6 "Build with Qt6, else Qt5" OFF)
-
-if(BUILD_WITH_QT6)
-    set(MIN_QT_VERSION 6.5.0)
-else()
-    set(MIN_QT_VERSION 5.2.0)
-endif()
-
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC OFF)
 set(CMAKE_AUTORCC ON)
@@ -30,7 +22,7 @@ endif()
 
 message("Build type is " ${CMAKE_BUILD_TYPE})
 
-set (GMIC_QT_HOST "gimp" CACHE STRING "Define for which host qmic-qt will be built: gimp, gimp3 (experimental), krita-plugin, none, paintdotnet or 8bf.")
+set (GMIC_QT_HOST "gimp" CACHE STRING "Define for which host gmic-qt will be built: gimp, gimp3 (experimental), krita-plugin, none, paintdotnet or 8bf.")
 if (${GMIC_QT_HOST} STREQUAL "none")
   message("Building standalone version.")
 else()
@@ -157,46 +149,33 @@ endif (ENABLE_SYSTEM_GMIC)
 #
 find_package(Threads REQUIRED)
 
-if(BUILD_WITH_QT6)
+# Qt
+#
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core)
+find_package(Qt${QT_VERSION_MAJOR} ${MIN_QT_VERSION}
+        REQUIRED COMPONENTS
+        Core
+        Gui
+        Widgets
+        Network
+        LinguistTools
+        LinguistTools
+)
 
-    #
-    # Qt6
-    #
-    find_package(Qt6 ${MIN_QT_VERSION}
-            REQUIRED COMPONENTS
-            Core
-            Gui
-            Widgets
-            Network
-    )
+if(QT_VERSION VERSION_GREATER_EQUAL "6.3")
+  if(QT_NO_CREATE_VERSIONLESS_FUNCTIONS)
+    qt6_standard_project_setup()
+  else()
+    qt_standard_project_setup()
+  endif()
+endif()
 
-    #
-    # For the translations
-    #
-    find_package(Qt6LinguistTools REQUIRED)
-
-    set(QT_VERSION_MAJOR 6)
-
-else()
-
-    #
-    # Qt5
-    #
-    find_package(Qt5 ${MIN_QT_VERSION}
-            REQUIRED COMPONENTS
-            Core
-            Gui
-            Widgets
-            Network
-    )
-
-    #
-    # For the translations
-    #
-    find_package(Qt5LinguistTools REQUIRED)
-
-    set(QT_VERSION_MAJOR 5)
-
+if(QT_VERSION VERSION_GREATER_EQUAL "6.3")
+  if(QT_NO_CREATE_VERSIONLESS_FUNCTIONS)
+    qt6_standard_project_setup()
+  else()
+    qt_standard_project_setup()
+  endif()
 endif()
 
 #
@@ -303,11 +282,24 @@ endif()
 # add all defines
 #
 
+if (QT_NO_CREATE_VERSIONLESS_FUNCTIONS)
+  set(gmic_qt_LIBRARIES
+          Qt${QT_VERSION_MAJOR}::Core
+          Qt${QT_VERSION_MAJOR}::Widgets
+          Qt${QT_VERSION_MAJOR}::Gui
+          Qt${QT_VERSION_MAJOR}::Network
+  )
+else()
+  set(gmic_qt_LIBRARIES
+          Qt::Core
+          Qt::Widgets
+          Qt::Gui
+          Qt::Network
+  )
+endif()
+
 set(gmic_qt_LIBRARIES
-        Qt${QT_VERSION_MAJOR}::Core
-        Qt${QT_VERSION_MAJOR}::Widgets
-        Qt${QT_VERSION_MAJOR}::Gui
-        Qt${QT_VERSION_MAJOR}::Network
+        ${gmic_qt_LIBRARIES}
         ${PNG_LIBRARIES}
         ${FFTW3_LIBRARIES}
         ${ZLIB_LIBRARIES}
@@ -351,7 +343,10 @@ if (APPLE)
     add_definitions(-D_IS_MACOS_)
     set(CMAKE_MACOSX_RPATH 1)
     set(BUILD_WITH_INSTALL_RPATH 1)
-    add_definitions(-mmacosx-version-min=10.9 -Wno-macro-redefined -Wno-deprecated-register)
+    if (QT_VERSION_MAJOR VERSION_EQUAL "5")
+      add_definitions(-mmacosx-version-min=10.14)
+    endif()
+    add_definitions(-Wno-macro-redefined -Wno-deprecated-register)
 endif()
 
 if (WIN32)
@@ -697,14 +692,25 @@ else()
 
   set_source_files_properties(${gmic_filters_translation_files} PROPERTIES OUTPUT_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/translations/filters)
 
-  qt5_add_translation(gmic_qt_QM
+  if(QT_VERSION VERSION_LESS_EQUAL "5.15.0")
+    qt5_add_translation(gmic_qt_QM
       ${gmic_translation_files}
       ${gmic_filters_translation_files}
-  )
+    )
+  elseif(QT_NO_CREATE_VERSIONLESS_FUNCTIONS)
+    qt6_add_translation(gmic_qt_QM
+        ${gmic_translation_files}
+        ${gmic_filters_translation_files}
+    )
+  else()
+    qt_add_translation(gmic_qt_QM
+      ${gmic_translation_files}
+      ${gmic_filters_translation_files}
+    )
+  endif()
 endif()
 
 include(GNUInstallDirs)
-
 install(FILES ${CMAKE_SOURCE_DIR}/../resources/gmic_cluts.gmz DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/gmic)
 install(FILES ${CMAKE_SOURCE_DIR}/../resources/gmic_denoise_cnn.gmz DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/gmic)
 
@@ -728,14 +734,12 @@ if (${GMIC_QT_HOST} STREQUAL "gimp" OR ${GMIC_QT_HOST} STREQUAL "gimp3")
 
     set (gmic_qt_SRCS ${gmic_qt_SRCS} src/Host/Gimp/host_gimp.cpp)
 
-    if(BUILD_WITH_QT6)
-
-        qt6_wrap_ui(gmic_qt_SRCS ${gmic_qt_FORMS})
-
-    else()
-
+    if(QT_VERSION VERSION_LESS_EQUAL "5.15.0")
         qt5_wrap_ui(gmic_qt_SRCS ${gmic_qt_FORMS})
-
+    elseif(QT_NO_CREATE_VERSIONLESS_FUNCTIONS)
+        qt6_wrap_ui(gmic_qt_SRCS ${gmic_qt_FORMS})
+    else()
+        qt_wrap_ui(gmic_qt_SRCS ${gmic_qt_FORMS})
     endif()
 
     add_definitions(-DGMIC_HOST=gimp -DGIMP_DISABLE_DEPRECATED)
@@ -753,10 +757,10 @@ elseif (${GMIC_QT_HOST} STREQUAL "krita-plugin")
 
     find_package(ECM 5.22 REQUIRED NOMODULE)
     set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${ECM_MODULE_PATH} ${ECM_KDE_MODULE_DIR})
-
+     
     include(KDEInstallDirs)
     include(KDECMakeSettings)
-
+     
     if (ANDROID)
         set (KRITA_PLUGIN_INSTALL_DIR ${LIB_INSTALL_DIR})
     else()
@@ -766,7 +770,7 @@ elseif (${GMIC_QT_HOST} STREQUAL "krita-plugin")
     find_package(KF5 ${MIN_FRAMEWORKS_VERSION} REQUIRED COMPONENTS
         CoreAddons
     )
-
+  
     message(STATUS "Looking for Krita QMic libraries in: ${CMAKE_PREFIX_PATH}")
 
     find_library(KIS_IMAGE_INTERFACE_LIBRARY
@@ -781,10 +785,16 @@ elseif (${GMIC_QT_HOST} STREQUAL "krita-plugin")
                            URL "http://www.krita.org"
                            DESCRIPTION "Krita GMic core library"
     )
-
+     
     set (gmic_qt_SRCS ${gmic_qt_SRCS} src/Host/KritaPlugin/host.cpp src/Host/KritaPlugin/gmicqttoolplugin.cpp)
     set (gmic_qt_SRCS ${gmic_qt_SRCS} )
-    qt5_wrap_ui(gmic_qt_SRCS ${gmic_qt_FORMS})
+    if(QT_VERSION VERSION_LESS_EQUAL "5.15.0")
+        qt5_wrap_ui(gmic_qt_SRCS ${gmic_qt_FORMS})
+    elseif(QT_NO_CREATE_VERSIONLESS_FUNCTIONS)
+        qt6_wrap_ui(gmic_qt_SRCS ${gmic_qt_FORMS})
+    else()
+        qt_wrap_ui(gmic_qt_SRCS ${gmic_qt_FORMS})
+    endif()
     add_definitions(-DGMIC_HOST=krita-plugin)
     add_definitions(-D_GMIC_QT_DISABLE_THEMING_)
     add_definitions(-D_GMIC_QT_CONSENT_TO_UPDATE_FIRST_)
@@ -827,18 +837,16 @@ elseif (${GMIC_QT_HOST} STREQUAL "none")
     src/Host/None/jpegqualitydialog.ui
     )
 
-  if(BUILD_WITH_QT6)
-
-    qt6_wrap_ui(gmic_qt_SRCS ${gmic_qt_FORMS})
-
-  else()
-
+  if(QT_VERSION VERSION_LESS_EQUAL "5.15.0")
     qt5_wrap_ui(gmic_qt_SRCS ${gmic_qt_FORMS})
-
+  elseif(QT_NO_CREATE_VERSIONLESS_FUNCTIONS)
+    qt6_wrap_ui(gmic_qt_SRCS ${gmic_qt_FORMS})
+  else()
+    qt_wrap_ui(gmic_qt_SRCS ${gmic_qt_FORMS})
   endif()
 
   add_definitions(-DGMIC_HOST=standalone)
-  add_executable(gmic_qt ${gmic_qt_SRCS} ${gmic_qt_QRC} ${gmic_qt_QM})
+  add_executable(gmic_qt ${gmic_qt_SRCS} ${gmic_qt_QRC}) # add ${gmic_qt_QM}
   target_link_libraries(gmic_qt PRIVATE ${gmic_qt_LIBRARIES})
   install(TARGETS gmic_qt RUNTIME DESTINATION bin)
 
@@ -846,18 +854,16 @@ elseif (${GMIC_QT_HOST} STREQUAL "paintdotnet")
 
   set (gmic_qt_SRCS ${gmic_qt_SRCS} src/Host/PaintDotNet/host_paintdotnet.cpp)
 
-  if(BUILD_WITH_QT6)
-
-    qt6_wrap_ui(gmic_qt_SRCS ${gmic_qt_FORMS})
-
-  else()
-
+  if(QT_VERSION VERSION_LESS_EQUAL "5.15.0")
     qt5_wrap_ui(gmic_qt_SRCS ${gmic_qt_FORMS})
-
+  elseif(QT_NO_CREATE_VERSIONLESS_FUNCTIONS)
+    qt6_wrap_ui(gmic_qt_SRCS ${gmic_qt_FORMS})
+  else()
+    qt_wrap_ui(gmic_qt_SRCS ${gmic_qt_FORMS})
   endif()
 
   add_definitions(-DGMIC_HOST=paintdotnet)
-  add_executable(gmic_paintdotnet_qt ${gmic_qt_SRCS} ${gmic_qt_QRC} ${gmic_qt_QM})
+  add_executable(gmic_paintdotnet_qt ${gmic_qt_SRCS} ${gmic_qt_QRC})
   target_link_libraries(
     gmic_paintdotnet_qt
     PRIVATE ${gmic_qt_LIBRARIES}
@@ -876,17 +882,16 @@ elseif (${GMIC_QT_HOST} STREQUAL "8bf")
 
   set (gmic_qt_SRCS ${gmic_qt_SRCS} src/Host/8bf/host_8bf.cpp)
 
-  if(BUILD_WITH_QT6)
-
-    qt6_wrap_ui(gmic_qt_SRCS ${gmic_qt_FORMS})
-
-  else()
-
+  if(QT_VERSION VERSION_LESS_EQUAL "5.15.0")
     qt5_wrap_ui(gmic_qt_SRCS ${gmic_qt_FORMS})
-
+  elseif(QT_NO_CREATE_VERSIONLESS_FUNCTIONS)
+    qt6_wrap_ui(gmic_qt_SRCS ${gmic_qt_FORMS})
+  else()
+    qt_wrap_ui(gmic_qt_SRCS ${gmic_qt_FORMS})
   endif()
+
   add_definitions(-DGMIC_HOST=plugin8bf)
-  add_executable(gmic_8bf_qt ${gmic_qt_SRCS} ${gmic_qt_QRC} ${gmic_qt_QM})
+  add_executable(gmic_8bf_qt ${gmic_qt_SRCS} ${gmic_qt_QRC})
   target_link_libraries(
     gmic_8bf_qt
     PRIVATE
@@ -896,8 +901,8 @@ elseif (${GMIC_QT_HOST} STREQUAL "8bf")
 
 else()
 
-  message(FATAL_ERROR "GMIC_QT_HOST is not defined as gimp, gimp3, kritaplugin, none, paintdotnet or 8bf")
-  
+  message(FATAL_ERROR "GMIC_QT_HOST is not defined as gimp, gimp3, none, paintdotnet or 8bf")
+
 endif()
 
 feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)
