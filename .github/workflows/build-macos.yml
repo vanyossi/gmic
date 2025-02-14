@@ -52,6 +52,7 @@ jobs:
         run: |
           brew install libpng fftw qt@${{ matrix.qt }}
           echo "/usr/local/opt/qt@${{ matrix.qt }}/bin" >> $GITHUB_PATH
+          echo "/opt/homebrew/opt/qt@${{ matrix.qt }}/bin" >> $GITHUB_PATH
       - name: Configure
         run: |
           mkdir build
