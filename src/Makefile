@@ -278,6 +278,10 @@ endif
 XSHM_CFLAGS = -Dcimg_use_xshm $(shell pkg-config --cflags xcb-shm)
 XSHM_LIBS = $(shell pkg-config --libs xcb-shm || echo -L$(PREFIX)/X11R6/lib) -lXext
 
+# Enable image display, using SDL (All platforms).
+SDL3_CFLAGS = -Dcimg_display=3 $(shell pkg-config --cflags sdl3 || echo -I/usr/local/include)
+SDL3_LIBS = $(shell pkg-config --libs sdl3 || echo -L/usr/local/lib -lSDL3 -Wl,-rpath,/usr/local/lib)
+
 # Enable image display, using GDI32 (Windows).
 GDI32_CFLAGS = -Dcimg_display=2
 GDI32_LIBS = -lgdi32
@@ -301,6 +305,11 @@ endif
 # (http://libjpeg.sourceforge.net/)
 JPEG_CFLAGS = -Dcimg_use_jpeg $(shell pkg-config --cflags libjpeg)
 JPEG_LIBS = $(shell pkg-config --libs libjpeg || echo -ljpeg)
+
+# Enable native support of JPEG XL image files, using the JXL library.
+# (https://en.wikipedia.org/wiki/JPEG_XL)
+JXL_CFLAGS = -Dcimg_use_jxl $(shell pkg-config --cflags libjxl)
+JXL_LIBS = $(shell pkg-config --libs libjxl || echo -ljxl)
 
 # Enable native support of TIFF image files, using the TIFF library.
 # (http://www.libtiff.org/)
@@ -343,29 +352,38 @@ FFTW_CFLAGS = -Dcimg_use_fftw3 $(shell pkg-config --cflags fftw3)
 FFTW_LIBS = $(shell pkg-config --libs fftw3 || echo -lfftw3)
 FFTW_LIBS += -lfftw3_threads
 
-# Enable native support of the BOARD library.
-# (https://github.com/GreycLab/libboard)
-BOARD_CFLAGS = -Dcimg_use_board
-BOARD_LIBS = -lboard
-
 # Enable native support of WebP image files, using the WebP library.
 # (https://chromium.googlesource.com/webm/libwebp/)
 WEBP_CFLAGS = -Dcimg_use_webp $(shell pkg-config --cflags libwebp)
 WEBP_LIBS = $(shell pkg-config --libs libwebp || echo -lwebp)
 
-# Define predefined sets of default used flags, depending on the architecture.
-GMIC_STD_CFLAGS = -Dgmic_community $(MANDATORY_CFLAGS) $(ABORT_CFLAGS) $(PARALLEL_CFLAGS) $(FFTW_CFLAGS) $(CURL_CFLAGS) $(PNG_CFLAGS) $(JPEG_CFLAGS) $(TIFF_CFLAGS)
-GMIC_STD_LIBS = $(MANDATORY_LIBS) $(PARALLEL_LIBS) $(FFTW_LIBS) $(CURL_LIBS) $(PNG_LIBS) $(JPEG_LIBS) $(TIFF_LIBS)
+# Define default display flags (depending on the target OS).
 ifeq ($(OS),Unix) # Unix
-GMIC_STD_CFLAGS += $(OPENMP_CFLAGS) $(X11_CFLAGS) $(OPENEXR_CFLAGS) $(WEBP_CFLAGS)
-GMIC_STD_LIBS += $(OPENMP_LIBS) $(X11_LIBS) $(OPENEXR_LIBS) $(WEBP_LIBS)
+DISPLAY_CFLAGS = ${X11_CFLAGS}
+DISPLAY_LIBS = ${X11_LIBS}
 else
 ifeq ($(OS),Darwin) # MacOSX
-GMIC_STD_CFLAGS += $(X11_CFLAGS) $(OPENEXR_CFLAGS)
-GMIC_STD_LIBS += $(X11_LIBS) $(OPENEXR_LIBS)
+DISPLAY_CFLAGS = ${X11_CFLAGS}
+DISPLAY_LIBS = ${X11_LIBS}
 else # Windows
-GMIC_STD_CFLAGS += $(OPENMP_CFLAGS) $(GDI32_CFLAGS)
-GMIC_STD_LIBS += $(OPENMP_LIBS) $(GDI32_LIBS)
+DISPLAY_CFLAGS = ${GDI32_CFLAGS}
+DISPLAY_LIBS = ${GDI32_LIBS}
+endif
+endif
+
+# Define set of default used flags, depending on the target OS.
+GMIC_STD_CFLAGS = -Dgmic_community $(MANDATORY_CFLAGS) $(DISPLAY_CFLAGS) $(ABORT_CFLAGS) $(PARALLEL_CFLAGS) $(FFTW_CFLAGS) $(CURL_CFLAGS) $(PNG_CFLAGS) $(JPEG_CFLAGS) $(TIFF_CFLAGS)
+GMIC_STD_LIBS = $(MANDATORY_LIBS) $(DISPLAY_LIBS) $(PARALLEL_LIBS) $(FFTW_LIBS) $(CURL_LIBS) $(PNG_LIBS) $(JPEG_LIBS) $(TIFF_LIBS)
+ifeq ($(OS),Unix) # Unix
+GMIC_STD_CFLAGS += $(OPENMP_CFLAGS) $(OPENEXR_CFLAGS) $(WEBP_CFLAGS)
+GMIC_STD_LIBS += $(OPENMP_LIBS) $(OPENEXR_LIBS) $(WEBP_LIBS)
+else
+ifeq ($(OS),Darwin) # MacOSX
+GMIC_STD_CFLAGS += $(OPENEXR_CFLAGS)
+GMIC_STD_LIBS += $(OPENEXR_LIBS)
+else # Windows
+GMIC_STD_CFLAGS += $(OPENMP_CFLAGS)
+GMIC_STD_LIBS += $(OPENMP_LIBS)
 endif
 endif
 
@@ -388,9 +406,6 @@ endif
 endif
 	@echo "**"
 	$(MAKE) lib cli gimp gmic_qt libc
-
-native:
-	$(MAKE) "CFLAGS+=$(GMIC_STD_CFLAGS) -O3 -march=native" "LIBS+=$(GMIC_STD_LIBS)" cli
 
 # libgmic
 #---------
@@ -428,7 +443,7 @@ use_libgmic : use_libgmic.cpp libgmic.so
 # CLI: Command line tool 'gmic'
 #-------------------------------
 
-# Regular builds
+# Regular builds.
 #
 cli: # Default: Without OpenCV support
 	$(MAKE) "CFLAGS+=$(GMIC_STD_CFLAGS) $(OPT_CFLAGS)" "LIBS+=gmic.o $(GMIC_STD_LIBS) $(OPT_LIBS)" gmic.o _cli
@@ -442,18 +457,21 @@ half: # Using float16 rather than float32 to store images
 	$(MAKE) "CFLAGS+=$(MANDATORY_CFLAGS) $(ABORT_CFLAGS) $(PARALLEL_CFLAGS) $(OPENMP_CFLAGS) $(X11_CFLAGS) $(OPENEXR_CFLAGS) -Dcimg_use_half -I/usr/include/OpenEXR -Dgmic_pixel_type=half" \
 	        "LIBS+=gmic.o $(MANDATORY_LIBS) $(PARALLEL_LIBS) $(OPENMP_LIBS) $(X11_LIBS) $(OPENEXR_LIBS)" gmic.o _cli
 
+native: # Optimized with architecture-specific flags, with OpenCV support
+	$(MAKE) "OPT_CFLAGS=-O3 -march=native -mtune=native -funroll-loops -fno-math-errno" opencv
+
+# Debug builds.
+#
 dev: # Without optimizations enabled, used for quick compile
 	$(MAKE) "CFLAGS+=$(GMIC_STD_CFLAGS)" "LIBS+=gmic.o $(GMIC_STD_LIBS)" gmic.o _cli
 
-# Debug builds
-#
 debug: # With sanitize-address enabled and symbols kept, to track bugs
 	$(MAKE) "CFLAGS+=$(GMIC_STD_CFLAGS) $(DEBUG_CFLAGS)" "LIBS+=gmic.o $(GMIC_STD_LIBS)" gmic.o _cli
 
 valgrind: # With symbols kept, to track bugs with valgrind
 	$(MAKE) "CFLAGS+=$(GMIC_STD_CFLAGS) $(OPT_CFLAGS) -g" "LIBS+=gmic.o $(GMIC_STD_LIBS) $(OPT_LIBS)" gmic.o _cli
 
-# Profiling builds
+# Profiling builds.
 #
 perf: # With optimization enabled and symbols kept, for code profiling
 	$(MAKE) "CFLAGS+=$(GMIC_STD_CFLAGS) $(OPT_CFLAGS) -g" "LIBS+=gmic.o $(GMIC_STD_LIBS) $(OPT_LIBS)" gmic.o _cli
@@ -468,6 +486,17 @@ gmic$(EXE): gmic_cli.cpp gmic.o
 
 gmic.o: gmic.cpp gmic.h gmic_stdlib_community.h CImg.h
 	$(CXX) -o gmic.o -c gmic.cpp -Dgmic_core $(CFLAGS)
+
+# Testing builds.
+#
+cli_sdl3:
+	$(MAKE) "DISPLAY_CFLAGS=$(SDL3_CFLAGS)" "DISPLAY_LIBS=$(SDL3_LIBS)" cli
+
+opencv_sdl3:
+	$(MAKE) "DISPLAY_CFLAGS=$(SDL3_CFLAGS)" "DISPLAY_LIBS=$(SDL3_LIBS)" opencv
+
+displayless:
+	$(MAKE) "DISPLAY_CFLAGS=-Dcimg_display=0" "DISPLAY_LIBS=" "OPT_CFLAGS=" cli
 
 # CLI (shared)
 #--------------
@@ -615,12 +644,20 @@ gimp_debug:  gmic_qt_files CImg.h gmic_stdlib_community.h
 	cd ../gmic-qt && $(QMAKE) CONFIG+=debug GMIC_PATH=$(SRC_PATH) ASAN=on PRERELEASE=$(PRERELEASE) GMIC_DYNAMIC_LINKING=off HOST=gimp gmic_qt.pro && $(MAKE)
 	@echo "Executable 'gmic_gimp_qt' has been successfully compiled in '../gmic-qt/'."
 
+gimp_sdl3: gmic_qt_files CImg.h gmic_stdlib_community.h
+	cd ../gmic-qt && $(QMAKE) CONFIG+=release SDL3=on GMIC_PATH=$(SRC_PATH) PRERELEASE=$(PRERELEASE) GMIC_DYNAMIC_LINKING=off HOST=gimp gmic_qt.pro && $(MAKE)
+	@echo "Executable 'gmic_gimp_qt' has been successfully compiled in '../gmic-qt/'."
+
 gmic_qt: gmic_qt_files CImg.h gmic_stdlib_community.h
 	cd ../gmic-qt && $(QMAKE) CONFIG+=release GMIC_PATH=$(SRC_PATH) PRERELEASE=$(PRERELEASE) GMIC_DYNAMIC_LINKING=off HOST=none gmic_qt.pro && $(MAKE)
 	@echo "Executable 'gmic_qt' has been successfully compiled in '../gmic-qt/'."
 
 gmic_qt_debug: gmic_qt_files CImg.h gmic_stdlib_community.h
 	cd ../gmic-qt && $(QMAKE) CONFIG+=debug GMIC_PATH=$(SRC_PATH) ASAN=on PRERELEASE=$(PRERELEASE) GMIC_DYNAMIC_LINKING=off HOST=none gmic_qt.pro && $(MAKE)
+	@echo "Executable 'gmic_qt' has been successfully compiled in '../gmic-qt/'."
+
+gmic_qt_sdl3: gmic_qt_files CImg.h gmic_stdlib_community.h
+	cd ../gmic-qt && $(QMAKE) CONFIG+=release SDL3=on GMIC_PATH=$(SRC_PATH) PRERELEASE=$(PRERELEASE) GMIC_DYNAMIC_LINKING=off HOST=none gmic_qt.pro && $(MAKE)
 	@echo "Executable 'gmic_qt' has been successfully compiled in '../gmic-qt/'."
 
 gmic_qt_files:
