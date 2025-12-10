@@ -180,8 +180,8 @@ endif
 #--------------------------------------------------------
 
 # Flags set to describe a 'prerelease' version.
-NO_PRERELEASE = $(shell date +%y%m%d%H)
-NO_PRERELEASE_CFLAGS = -Dgmic_prerelease="\\\"$(PRERELEASE)\\\""
+PRERELEASE = $(shell date +%y%m%d%H)
+PRERELEASE_CFLAGS = -Dgmic_prerelease="\\\"$(PRERELEASE)\\\""
 
 # Minimal set of flags mandatory to compile G'MIC.
 MANDATORY_CFLAGS = -Dcimg_date=\\\"\\\" -Dcimg_time=\\\"\\\" -Dcimg_use_zlib -I. $(shell pkg-config --cflags zlib || echo -I$(PREFIX)/$(INCLUDE)) $(PRERELEASE_CFLAGS) $(EXTRA_CFLAGS)
