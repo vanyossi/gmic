@@ -665,6 +665,8 @@ include(GNUInstallDirs)
 
 install(FILES ${CMAKE_SOURCE_DIR}/../resources/gmic_cluts.gmz DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/gmic)
 install(FILES ${CMAKE_SOURCE_DIR}/../resources/gmic_denoise_cnn.gmz DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/gmic)
+install(FILES ${CMAKE_SOURCE_DIR}/../resources/gmic_lightleaks.gmz DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/gmic)
+install(FILES ${CMAKE_SOURCE_DIR}/../resources/gmic_scale2x_cnn.gmz DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/gmic)
 
 set(gmic_qt_QRC
     gmic_qt.qrc
