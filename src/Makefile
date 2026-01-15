@@ -180,8 +180,8 @@ endif
 #--------------------------------------------------------
 
 # Flags set to describe a 'prerelease' version.
-PRERELEASE = $(shell date +%y%m%d%H)
-PRERELEASE_CFLAGS = -Dgmic_prerelease="\\\"$(PRERELEASE)\\\""
+NO_PRERELEASE = $(shell date +%y%m%d%H)
+NO_PRERELEASE_CFLAGS = -Dgmic_prerelease="\\\"$(PRERELEASE)\\\""
 
 # Minimal set of flags mandatory to compile G'MIC.
 MANDATORY_CFLAGS = -Dcimg_date=\\\"\\\" -Dcimg_time=\\\"\\\" -Dcimg_use_zlib -I. $(shell pkg-config --cflags zlib || echo -I$(PREFIX)/$(INCLUDE)) $(PRERELEASE_CFLAGS) $(EXTRA_CFLAGS)
@@ -345,6 +345,9 @@ MAGICK_LIBS = $(shell pkg-config --libs GraphicsMagick++ || echo -lGraphicsMagic
 # (http://www.openexr.com/)
 OPENEXR_CFLAGS = -Dcimg_use_openexr $(shell pkg-config --cflags OpenEXR || echo -I$(PREFIX)/$(INCLUDE)/OpenEXR)
 OPENEXR_LIBS = $(shell pkg-config --libs OpenEXR || echo -lIlmImf -lHalf)
+ifdef IS_GCC
+OPENEXR_CFLAGS += -Wno-class-memaccess
+endif
 
 # Enable Fast Fourier Transforms, using the FFTW3 library.
 # (http://www.fftw.org/)
@@ -372,7 +375,7 @@ endif
 endif
 
 # Define set of default used flags, depending on the target OS.
-GMIC_STD_CFLAGS = -Dgmic_community $(MANDATORY_CFLAGS) $(DISPLAY_CFLAGS) $(ABORT_CFLAGS) $(PARALLEL_CFLAGS) $(FFTW_CFLAGS) $(CURL_CFLAGS) $(PNG_CFLAGS) $(JPEG_CFLAGS) $(TIFF_CFLAGS)
+GMIC_STD_CFLAGS = $(MANDATORY_CFLAGS) $(DISPLAY_CFLAGS) $(ABORT_CFLAGS) $(PARALLEL_CFLAGS) $(FFTW_CFLAGS) $(CURL_CFLAGS) $(PNG_CFLAGS) $(JPEG_CFLAGS) $(TIFF_CFLAGS)
 GMIC_STD_LIBS = $(MANDATORY_LIBS) $(DISPLAY_LIBS) $(PARALLEL_LIBS) $(FFTW_LIBS) $(CURL_LIBS) $(PNG_LIBS) $(JPEG_LIBS) $(TIFF_LIBS)
 ifeq ($(OS),Unix) # Unix
 GMIC_STD_CFLAGS += $(OPENMP_CFLAGS) $(OPENEXR_CFLAGS) $(WEBP_CFLAGS)
@@ -453,9 +456,11 @@ opencv: # Default: With OpenCV support
 	$(MAKE) "CFLAGS+=$(GMIC_STD_CFLAGS) $(OPT_CFLAGS) $(OPENCV_CFLAGS)" "LIBS+=gmic.o $(GMIC_STD_LIBS) $(OPT_LIBS) $(OPENCV_LIBS)" gmic.o _cli
 	$(STRIP) gmic$(EXE)
 
-half: # Using float16 rather than float32 to store images
-	$(MAKE) "CFLAGS+=$(MANDATORY_CFLAGS) $(ABORT_CFLAGS) $(PARALLEL_CFLAGS) $(OPENMP_CFLAGS) $(X11_CFLAGS) $(OPENEXR_CFLAGS) -Dcimg_use_half -I/usr/include/OpenEXR -Dgmic_pixel_type=half" \
-	        "LIBS+=gmic.o $(MANDATORY_LIBS) $(PARALLEL_LIBS) $(OPENMP_LIBS) $(X11_LIBS) $(OPENEXR_LIBS)" gmic.o _cli
+half: # Using float16 rather than float32 to store images: HIGHLY EXPERIMENTAL, DO NOT EXPECT MUCH FROM THAT!
+	$(MAKE) "CFLAGS+=$(GMIC_STD_CFLAGS) $(OPT_CFLAGS) -Dgmic_pixel_type=half" "LIBS+=gmic.o $(GMIC_STD_LIBS)" gmic.o _cli
+
+double: # Using float64 rather than float32 to store images
+	$(MAKE) "CFLAGS+=$(GMIC_STD_CFLAGS) $(OPT_CFLAGS) -Dgmic_pixel_type=double" "LIBS+=gmic.o $(GMIC_STD_LIBS)" gmic.o _cli
 
 native: # Optimized with architecture-specific flags, with OpenCV support
 	$(MAKE) "OPT_CFLAGS=-O3 -march=native -mtune=native -funroll-loops -fno-math-errno" opencv
@@ -500,7 +505,7 @@ displayless:
 
 # CLI (shared)
 #--------------
-cli_shared:
+cli_shared: lib
 	$(MAKE) "CFLAGS+=$(GMIC_STD_CFLAGS) $(OPT_CFLAGS)" "LIBS+=$(GMIC_STD_LIBS) $(OPT_LIBS) -lgmic" _lib _cli
 	$(STRIP) gmic$(EXE)
 
@@ -544,7 +549,7 @@ libcgmic_files:
 	fi
 	@echo " done!"
 
-libcgmic.so: libcgmic.o
+libcgmic.so: libcgmic.o libgmic.o
 	ar rcs libcgmic.a libcgmic.o
 ifeq ($(OS),Darwin)
 	$(CXX) -dynamiclib -o libcgmic.$(SOVERSION).dylib -install_name $(USR)/lib/libcgmic.$(SOVERSION).dylib -compatibility_version $(SOVERSION) -current_version $(SVERSION) $(MANDATORY_CFLAGS) libcgmic.o libgmic.o $(LIBS)
@@ -567,8 +572,8 @@ endif
 libcgmic.o: gmic_libc.cpp CImg.h gmic_libc.h gmic.h
 	$(CXX) -o libcgmic.o -c gmic_libc.cpp -Dgmic_core $(PIC) $(CFLAGS)
 
-use_libcgmic: use_libcgmic.c gmic_libc.h
-	$(CC) -std=c99 -o use_libcgmic use_libcgmic.c -lcgmic $(LIBS)
+use_libcgmic: use_libcgmic.c gmic_libc.h libcgmic.so
+	$(CC) -std=c99 -o use_libcgmic use_libcgmic.c -L. -lcgmic $(LIBS)
 
 # libcgmic (static)
 #-------------------
