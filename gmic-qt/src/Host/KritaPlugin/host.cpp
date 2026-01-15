@@ -20,7 +20,6 @@
 
 #include <QByteArray>
 #include <QDebug>
-#include <QDesktopWidget>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QSharedMemory>
