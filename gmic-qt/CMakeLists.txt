@@ -13,11 +13,6 @@ add_definitions(-Dcimg_use_cpp11=1)
 
 option(BUILD_WITH_QT6 "Build with Qt6, else Qt5" OFF)
 
-if(BUILD_WITH_QT6)
-    set(MIN_QT_VERSION 6.5.0)
-else()
-    set(MIN_QT_VERSION 5.2.0)
-endif()
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC OFF)
@@ -158,46 +153,31 @@ endif (ENABLE_SYSTEM_GMIC)
 #
 find_package(Threads REQUIRED)
 
-if(BUILD_WITH_QT6)
+#
+# Qt
+#
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core)
 
-    #
-    # Qt6
-    #
-    find_package(Qt6 ${MIN_QT_VERSION}
-            REQUIRED COMPONENTS
-            Core
-            Gui
-            Widgets
-            Network
-    )
-
-    #
-    # For the translations
-    #
-    find_package(Qt6LinguistTools REQUIRED)
-
+if(BUILD_WITH_QT6 OR Qt6_FOUND)
+    set(MIN_QT_VERSION 6.5.0)
     set(QT_VERSION_MAJOR 6)
-
 else()
-
-    #
-    # Qt5
-    #
-    find_package(Qt5 ${MIN_QT_VERSION}
-            REQUIRED COMPONENTS
-            Core
-            Gui
-            Widgets
-            Network
-    )
-
-    #
-    # For the translations
-    #
-    find_package(Qt5LinguistTools REQUIRED)
-
+    set(MIN_QT_VERSION 5.2.0)
     set(QT_VERSION_MAJOR 5)
+endif()
 
+find_package(Qt${QT_VERSION_MAJOR} ${MIN_QT_VERSION}
+        REQUIRED COMPONENTS
+        Core
+        Gui
+        Widgets
+        Network
+)
+
+find_package(Qt${QT_VERSION_MAJOR}LinguistTools REQUIRED)
+
+if(Qt6_FOUND)
+  qt6_standard_project_setup()
 endif()
 
 #
@@ -352,7 +332,12 @@ if (APPLE)
     add_definitions(-D_IS_MACOS_)
     set(CMAKE_MACOSX_RPATH 1)
     set(BUILD_WITH_INSTALL_RPATH 1)
-    add_definitions(-mmacosx-version-min=10.9 -Wno-macro-redefined -Wno-deprecated-register)
+    if (QT_VERSION_MAJOR VERSION_EQUAL "5")
+      add_definitions(-mmacosx-version-min=10.14)
+    else()
+      add_definitions(-mmacosx-version-min=12)
+    endif()
+    add_definitions(-Wno-macro-redefined -Wno-deprecated-register)
 endif()
 
 if (WIN32)
@@ -698,10 +683,17 @@ else()
 
   set_source_files_properties(${gmic_filters_translation_files} PROPERTIES OUTPUT_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/translations/filters)
 
-  qt5_add_translation(gmic_qt_QM
-      ${gmic_translation_files}
-      ${gmic_filters_translation_files}
-  )
+  if(Qt6_FOUND)
+    qt6_add_translation(gmic_qt_QM
+        ${gmic_translation_files}
+        ${gmic_filters_translation_files}
+    )
+  else()
+    qt5_add_translation(gmic_qt_QM
+        ${gmic_translation_files}
+        ${gmic_filters_translation_files}
+    )
+  endif()
 endif()
 
 include(GNUInstallDirs)
@@ -752,7 +744,11 @@ if (${GMIC_QT_HOST} STREQUAL "gimp" OR ${GMIC_QT_HOST} STREQUAL "gimp3")
     install(TARGETS gmic_gimp_qt RUNTIME DESTINATION "${GIMP_PKGLIBDIR}/plug-ins/gmic_gimp_qt")
 
 elseif (${GMIC_QT_HOST} STREQUAL "krita-plugin")
-    set(MIN_FRAMEWORKS_VERSION 5.44.0)
+    if(Qt6_FOUND)
+      set(MIN_FRAMEWORKS_VERSION 6.7.0)
+    else()
+      set(MIN_FRAMEWORKS_VERSION 5.44.0)
+    endif()
 
     find_package(ECM 5.22 REQUIRED NOMODULE)
     set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${ECM_MODULE_PATH} ${ECM_KDE_MODULE_DIR})
@@ -761,12 +757,12 @@ elseif (${GMIC_QT_HOST} STREQUAL "krita-plugin")
     include(KDECMakeSettings)
 
     if (ANDROID)
-        set (KRITA_PLUGIN_INSTALL_DIR ${LIB_INSTALL_DIR})
+        set (KRITA_PLUGIN_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR})
     else()
-        set (KRITA_PLUGIN_INSTALL_DIR ${LIB_INSTALL_DIR}/kritaplugins)
+        set (KRITA_PLUGIN_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/kritaplugins)
     endif()
 
-    find_package(KF5 ${MIN_FRAMEWORKS_VERSION} REQUIRED COMPONENTS
+    find_package(KF${QT_VERSION_MAJOR} ${MIN_FRAMEWORKS_VERSION} REQUIRED COMPONENTS
         CoreAddons
     )
 
@@ -787,7 +783,11 @@ elseif (${GMIC_QT_HOST} STREQUAL "krita-plugin")
 
     set (gmic_qt_SRCS ${gmic_qt_SRCS} src/Host/KritaPlugin/host.cpp src/Host/KritaPlugin/gmicqttoolplugin.cpp)
     set (gmic_qt_SRCS ${gmic_qt_SRCS} )
-    qt5_wrap_ui(gmic_qt_SRCS ${gmic_qt_FORMS})
+    if(Qt6_FOUND)
+      qt6_wrap_ui(gmic_qt_SRCS ${gmic_qt_FORMS})
+    else()
+      qt5_wrap_ui(gmic_qt_SRCS ${gmic_qt_FORMS})
+    endif()
     add_definitions(-DGMIC_HOST=krita-plugin)
     add_definitions(-D_GMIC_QT_DISABLE_THEMING_)
     add_definitions(-D_GMIC_QT_CONSENT_TO_UPDATE_FIRST_)
@@ -806,7 +806,7 @@ elseif (${GMIC_QT_HOST} STREQUAL "krita-plugin")
       PRIVATE
       ${gmic_qt_LIBRARIES}
       ${KIS_IMAGE_INTERFACE_LIBRARY}
-      KF5::CoreAddons
+      KF${QT_VERSION_MAJOR}::CoreAddons
       )
     if (ANDROID)
       target_link_libraries(
@@ -830,7 +830,7 @@ elseif (${GMIC_QT_HOST} STREQUAL "none")
     src/Host/None/jpegqualitydialog.ui
     )
 
-  if(BUILD_WITH_QT6)
+  if(Qt6_FOUND)
 
     qt6_wrap_ui(gmic_qt_SRCS ${gmic_qt_FORMS})
 
@@ -849,7 +849,7 @@ elseif (${GMIC_QT_HOST} STREQUAL "paintdotnet")
 
   set (gmic_qt_SRCS ${gmic_qt_SRCS} src/Host/PaintDotNet/host_paintdotnet.cpp)
 
-  if(BUILD_WITH_QT6)
+  if(Qt6_FOUND)
 
     qt6_wrap_ui(gmic_qt_SRCS ${gmic_qt_FORMS})
 
@@ -879,7 +879,7 @@ elseif (${GMIC_QT_HOST} STREQUAL "8bf")
 
   set (gmic_qt_SRCS ${gmic_qt_SRCS} src/Host/8bf/host_8bf.cpp)
 
-  if(BUILD_WITH_QT6)
+  if(Qt6_FOUND)
 
     qt6_wrap_ui(gmic_qt_SRCS ${gmic_qt_FORMS})
 
