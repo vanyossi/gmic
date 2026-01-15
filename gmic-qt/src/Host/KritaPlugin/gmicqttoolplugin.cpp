@@ -68,7 +68,7 @@ KritaGmicPlugin::KritaGmicPlugin(QObject *parent, const QVariantList &)
   {
     const auto srcPath = QDir(QCoreApplication::applicationDirPath().append(QStringLiteral("/../share/gmic/"))).absolutePath();
     const auto dstPath = GmicQt::gmicConfigPath(true);
-    const std::list<QString> files = {"/gmic_cluts.gmz", "/gmic_denoise_cnn.gmz"};
+    const std::list<QString> files = {"/gmic_cluts.gmz", "/gmic_denoise_cnn.gmz", "/gmic_lightleaks.gmz", "/gmic_scale2x_cnn.gmz"};
 
     for (const auto file: files) {
       const auto src = srcPath + file;
