@@ -79,22 +79,32 @@ jobs:
         if: ${{ matrix.qt == '5' }}
         run:
           sudo apt-get install qtbase5-dev qttools5-dev
+      - name: Setup aqtinstall
+        if: ${{ matrix.qt == '6' }}
+        run: |
+            sudo python3 -m pip install aqtinstall
+
       - name: Install Qt 6
         if: ${{ matrix.qt == '6' }}
-        # https://askubuntu.com/a/1460243
         run: |
-          sudo apt-get install qt6-base-dev qt6-base-private-dev qt6-l10n-tools qt6-tools-dev qt6-tools-dev-tools linguist-qt6 libegl1-mesa-dev
-          qtchooser -install qt6 $(which qmake6)
-          echo "QT_SELECT=qt6" >> $GITHUB_ENV
+            sudo apt-get install libgl1-mesa-dev libglx-dev
+            sudo python3 -m aqt install-qt linux desktop 6.5.3 gcc_64 --outputdir ${{ github.workspace }}/Qt6
+            echo "QT_ROOT_DIR=${{ github.workspace }}/Qt6/6.5.3/gcc_64" >> ${GITHUB_ENV}
+            echo "QT_SELECT=qt6" >> $GITHUB_ENV
+            echo "Qt6_DIR=${{ env.QT_ROOT_DIR }}" >> ${GITHUB_ENV}
       # Don't use LTO because it OOMs the runners
       - name: Configure
         run: |
+          export PATH="${{ env.QT_ROOT_DIR }}/bin:${PATH}"
           mkdir build
           cd build
+          env
           cmake ${{ github.workspace }}/gmic-qt \
               -DGMIC_QT_HOST="none" \
               -DENABLE_SYSTEM_GMIC=OFF \
               -DENABLE_LTO=OFF \
+              -DCMAKE_PREFIX_PATH=${{ env.QT_ROOT_DIR }} \
+              -DQT_DEBUG_FIND_PACKAGE=ON \
               -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install \
               -G Ninja
       - name: Build + install
