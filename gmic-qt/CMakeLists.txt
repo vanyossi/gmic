@@ -158,13 +158,17 @@ find_package(Threads REQUIRED)
 #
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core)
 
-if(BUILD_WITH_QT6 OR Qt6_FOUND)
+if(BUILD_WITH_QT6
+      OR (${QT_VERSION_MAJOR} EQUAL 6)
+      OR Qt6_FOUND
+      )
     set(MIN_QT_VERSION 6.5.0)
     set(QT_VERSION_MAJOR 6)
 else()
     set(MIN_QT_VERSION 5.2.0)
     set(QT_VERSION_MAJOR 5)
 endif()
+
 
 find_package(Qt${QT_VERSION_MAJOR} ${MIN_QT_VERSION}
         REQUIRED COMPONENTS
