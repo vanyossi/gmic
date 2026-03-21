@@ -2032,7 +2032,7 @@ csv2ts : skip "${1=fr}"
 #@cli : Default value: 'mode=1'.
 
 #@cli delete : filename1[,filename2,...] : (+)
-#@cli : Delete specified filenames on disk. Multiple filenames must be separated by commas.
+#@cli : Delete specified files or directories on disk. Multiple filenames must be separated by commas.
 
 #@cli d : eq. to 'display'.
 d :
@@ -6949,6 +6949,7 @@ parse_cli_images :
                 else o ${_parse_cli_images_path}t_$basename,75 fi
                 rm
               fi
+
             # onfail
             #   rm gui_error_preview "Unable to generate preview image"
             #   o ${_parse_cli_images_path}f_$basename,85
@@ -8821,7 +8822,7 @@ parse_gui_images :
       gui_merge_layers
     } fi
     if !$! $_input_image gui_no_preview , fi
-    c. 0,255 r. 100%,100%,1,{min(s,4)} to_rgba.
+    c. 0,255 r. 100%,100%,1,{cut(s,1,4)} to_rgba.
     if {*} w. ${"fitscreen ."} fi
     o. $file_out rm.
   fi }
@@ -9126,7 +9127,7 @@ straprilfool : skip "${1=}"
 #
 parse_gui_parseparams_json : u 1 # Tell parser to parse filter parameters
 parse_gui_trigger_json :
-  foreach { # Keep only 1-level folders
+  foreach { # Keep only 1-level directories
     => {`s=[['{n}'],0];p=find(s,_'/',size(s)-1,0);p>=0?(p=find(s,_'/',p-1,0);p>0?copy(s,s[p+1],size(s)-p));s`}
   }
   sort_list +,n
@@ -9291,7 +9292,7 @@ _parse_gui_json :
 #
 parse_gui_parseparams_gmicol : u 1 # Tell parser to parse filter parameters
 parse_gui_trigger_gmicol :
-  foreach { # Keep only 1-level folders
+  foreach { # Keep only 1-level directories
     => {`s=[['{n}'],0];p=find(s,_'/',size(s)-1,0);p>=0?(p=find(s,_'/',p-1,0);p>0?copy(s,s[p+1],size(s)-p));s`}
   }
   sort_list +,n
@@ -11041,7 +11042,7 @@ update_deprecate : check "isint($1,1,999)"
 
 # update_download_html.
 # Update file versions on G'MIC download page, with specified version number.
-# $1 = version number (e.g. '3.7.2').
+# $1 = version number (e.g. '3.7.4').
 update_download_html : check "
     is_digit(c)=(c>=_'0' && c<=_'9');
     ver = ['${1=undefined}'];
@@ -12631,7 +12632,7 @@ _strings2ts_dest :
 #
 parse_gui_parseparams_zart : u 1 # Tell parser to parse filter parameters
 parse_gui_trigger_zart :
-  foreach { # Keep only 1-level folders
+  foreach { # Keep only 1-level directories
     => {`s=[['{n}'],0];p=find(s,_'/',size(s)-1,0);p>=0?(p=find(s,_'/',p-1,0);p>0?copy(s,s[p+1],size(s)-p));s`}
   }
   sort_list +,n
@@ -12945,7 +12946,7 @@ upload_filters :
   x "cd "$HOME"/work/src/gmic-community && git pull"
 
   # Define the list of compatible versions.
-  versions=371,372,$_version
+  versions=371,372,373,374,$_version
 
   # Import filters from stdlib and community.
   files $HOME/work/src/gmic-community/include/*.gmic
@@ -13073,9 +13074,9 @@ _upload : skip "${2=""}","${3=0}"
 upload_binaries : check "isbool(${2=1})"
   is_pre=${"strcontains $1,_pre"}
   N=0
-  file$N=gmic_$1_gimp3.0_win64.exe                      N+=1
+  file$N=gmic_$1_gimp3.2_win64.exe                      N+=1
   file$N=gmic_$1_gimp2.10_win64.exe                     N+=1
-  file$N=gmic_$1_gimp3.0_win64.zip                      N+=1
+  file$N=gmic_$1_gimp3.2_win64.zip                      N+=1
   file$N=gmic_$1_gimp2.10_win64.zip                     N+=1
   file$N=gmic_$1_cli_win64.zip                          N+=1
   file$N=gmic_$1_qt_win64.zip                           N+=1
@@ -19278,7 +19279,7 @@ deinterlace : skip ${1=0}
 # _fast_approx={ 0:No | 1:Yes } : (+)
 #@cli : Denoise selected images by non-local patch averaging.
 #@cli : Default values: 'patch_size=5', 'lookup_size=6' and 'smoothness=1'.
-#@cli : $ image.jpg +denoise 5,5,8
+#@cli : $ image.jpg noise 20 cut 0,255 +denoise 8,8,7
 
 #@cli denoise_haar : _threshold>=0,_nb_scales>=0,_cycle_spinning>0
 #@cli : Denoise selected images using haar-wavelet thresholding with cycle spinning.
@@ -26739,7 +26740,7 @@ pointcloud3d :
           da_push(#4,RGB[0],RGB[1],RGB[2]);
           da_push(#5,opac);
         );
-      ); I; end(repeat(4,k,da_freeze(#k + 2)); i[#1,6] = i[#1,7] = ui2f(nbp))"
+      ); end(repeat(4,k,da_freeze(#k + 2)); i[#1,6] = i[#1,7] = ui2f(nbp)); _0"
     a[1--1] y k. => $nm
   }
 
@@ -35538,26 +35539,21 @@ whirls : skip ${1=3},${2=6},${3=0.5},${4=1.8}
 #
 #------------------------------------
 
-#@cli deform : _amplitude[%]>=0,_interpolation
+#@cli deform : _amplitude[%]>=0,_interpolation,_boundary_conditions
 #@cli : Apply random smooth deformation on selected images.
 #@cli : 'interpolation' can be { 0:None | 1:Linear | 2:Bicubic }.
-#@cli : Default value: 'amplitude=10'.
+#@cli : 'boundary_conditions' can be { 0:Dirichlet | 1:Neumann | 2:Periodic | 3:Mirror }.
+#@cli : Default values: 'amplitude=10', 'interpolation=1' and 'boundary_conditions=3'.
 #@cli : $ image.jpg +deform[0] 10 +deform[0] 20
-deform : check "${1=10}>=0 && isint(${2=1},0,2)"
+deform : check "${1=10}>=0 && isint(${2=1},0,2) && isint(${3=3},0,3)"
   e[^-1] "Apply random smooth deformation on image$?, with amplitude $1."
-  foreach { if w
-    w,h,d:=w,h,d
-    amp:=ispercentage($1)?max($w,$h,$d)*$1:$1
-    sx,sy,sz=1
-    if $w!=1 sx=2% fi
-    if $h!=1 sy=2% fi
-    if $d!=1 sz=2% fi
-    $sx,$sy,$sz,3
-    if $w!=1 sh. 0 noise. $amp rm. fi
-    if $h!=1 sh. 1 noise. $amp rm. fi
-    if $d!=1 sh. 2 noise. $amp rm. fi
-    r. ..,..,..,3,5 warp.. .,1,$2,1 rm.
-  fi }
+  foreach {
+    if w
+      {vmax([w,h,d]*2%,1)},3,"(ispercentage($1)?max(w,h,d)*$1:$1)*([ w#-1,h#-1,d#-1 ]>1)*[g,g,g]"
+      r. ..,..,..,3,5
+      warp.. .,1,$2,$3 rm.
+    fi
+  }
 
 #@cli euclidean2polar : _center_x[%],_center_y[%],_stretch_factor>0,\
 # _boundary_conditions={ 0:Dirichlet | 1:Neumann | 2:Periodic | 3:Mirror }
@@ -37977,9 +37973,9 @@ filename_dated :
     {`v2s(date(4),-2,2)`}{`v2s(date(5),-2,2)`}{`v2s(date(6),-2,2)`}$ext
 
 #@cli files : _mode,path : (+)
-#@cli : Return the list of files and/or subfolders from specified path.
+#@cli : Return the list of files and/or subdirectories from specified path.
 #@cli : 'path' can be eventually a matching pattern.
-#@cli : 'mode' can be { 0:Files only | 1:Folders only | 2:Files + folders }.
+#@cli : 'mode' can be { 0:Files only | 1:Directories only | 2:Files + Directories }.
 #@cli : Add '3' to 'mode' to return full paths instead of filenames only.
 #@cli : Default value: 'mode=5'.
 
@@ -45492,6 +45488,8 @@ _gui_download_all_data :
 #@gui : url = link("Mahvelous Mahvin","http://www.mahvin.com/")
 #@gui : note = note{"and"}
 #@gui : url = link{"David Revoy (Deevad)","http://www.davidrevoy.com/"}
+#@gui : sep = separator()
+#@gui : note = note("<small>Author: <i>David Tschumperlé</i>.      Latest Update: <i>2026/03/16</i>.</small>")
 fx_gmicky : check "isint(${1=0},0)"
   rm
   if !$1 sp gmicky => "name(Gmicky)"
@@ -45512,7 +45510,7 @@ fx_gmicky_preview :
 #@gui : from the server logs: <i>IP address of the client; date and time of the request;</i>
 #@gui : as well as a short string, supplied through the HTTP protocol <i>"User Agent"</i> header
 #@gui : field, which describes the full plugin version as shown in the window title
-#@gui : (e.g. "<i>G'MIC-Qt for GIMP 3.0 - Linux 64 bits - 3.7.2</i>").\n\n
+#@gui : (e.g. "<i>G'MIC-Qt for GIMP 3.2 - Linux 64 bits - 3.7.4</i>").\n\n
 #@gui : Note that this information may solely be used for purely anonymous
 #@gui : statistical purposes.
 #@gui : "}
@@ -45544,8 +45542,8 @@ fx_gmicky_preview :
 #@gui : - <b>2024/12/31</b> : version <i>3.5.0</i>.\n
 #@gui : - <b>2025/08/21</b> : version <i>3.6.0</i>.\n
 #@gui : - <b>2026/02/13</b> : version <i>3.7.0</i>.\n
-#@gui : - <span foreground="#EE5500"><b>2026/02/26</b> : version <i>3.7.2</i> (Current stable).</span>\n
-##@gui : - <b>2026/XX/XX</b> : version <i>3.7.3</i> (Current pre-release).\n
+#@gui : - <span foreground="#EE5500"><b>2026/03/18</b> : version <i>3.7.4</i> (Current stable).</span>\n
+##@gui : - <b>2026/XX/XX</b> : version <i>3.7.5</i> (Current pre-release).\n
 #@gui : "}
 #@gui : sep = separator()
 #@gui : url = link{"View changelog for next major version (3.8)","https://discuss.pixls.us/t/on-the-road-to-gmic-3-8"}
@@ -48088,7 +48086,7 @@ fx_quadtree :
       j.. .,{-2,w-6},$> rm.
     }
 
-    # Synthetize image.
+    # Synthesize image.
     permute. cyzx
     channels[0] 0,3 f[0] 0
 
@@ -52837,7 +52835,7 @@ fx_transfer_rgb_preview :
     rm.
   } }
 
-#@gui Tune HSV Colors : fx_tune_hsv, fx_tune_hsv_preview(1)
+#@gui Tune HSV Colors : fx_tune_hsv, fx_tune_hsv_preview
 #@gui : Description = note{"<span color="#EE5500"><b>Description:</b></span> \
 # Fine-tunes specific hue, saturation, and value ranges.
 #@gui : "}, sep = separator()
@@ -57020,7 +57018,7 @@ fx_freaky_details :
 #@gui : Average Smoothness = ~float(20,0,40)
 #@gui : Constrain Values = ~bool(1)
 #@gui : sep = separator()
-#@gui : Channel(s) = ~choice(7,"All","RGBA [All]","RGBA [Red-Green-Blue]","RGBA [Red]","RGBA [Green]","RGBA [Blue]",\
+#@gui : Channel(s) = ~choice(12,"All","RGBA [All]","RGBA [Red-Green-Blue]","RGBA [Red]","RGBA [Green]","RGBA [Blue]",\
 # "RGBA [Alpha]","Linear RGB [All]","Linear RGB [Red]","Linear RGB [Green]","Linear RGB [Blue]","YCbCr [All]",\
 # "YCbCr [Luminance]","YCbCr [Blue-Red Chrominances]","YCbCr [Blue Chrominance]","YCbCr [Red Chrominance]",\
 # "YCbCr [Green Chrominance]","Lab [All]","Lab [Lightness]","Lab [ab-Chrominances]","Lab [a-Chrominance]",\

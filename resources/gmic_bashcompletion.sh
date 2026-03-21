@@ -366,7 +366,7 @@ _gmic()
         "deconvolve_fft" | "-deconvolve_fft" | "+deconvolve_fft")
             COMPREPLY=( $(compgen -W "> [kernel],_regularization>=0") ); return 0;;
         "deform" | "-deform" | "+deform")
-            COMPREPLY=( $(compgen -W "> _amplitude[%]>=0,_interpolation") ); return 0;;
+            COMPREPLY=( $(compgen -W "> _amplitude[%]>=0,_interpolation,_boundary_conditions") ); return 0;;
         "deinterlace" | "-deinterlace" | "+deinterlace")
             COMPREPLY=( $(compgen -W "> _method") ); return 0;;
         "delaunay" | "-delaunay" | "+delaunay")

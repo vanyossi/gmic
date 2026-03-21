@@ -508,6 +508,36 @@ Returns nil if not inside a multiline string or line doesn't start with a closer
   "Return t if LINE-STR opens a multiline string (odd number of quotes)."
   (= (% (gmic--count-unescaped-quotes line-str) 2) 1))
 
+(defun gmic--paren-delta-in-string-portion (line-str)
+  "Return net paren/bracket delta for the content inside the string
+opened by LINE-STR.  Only meaningful when `gmic--line-opens-string-p'
+returns t for LINE-STR.  Counts '(' and '[' as +1, ')' and ']' as -1,
+but only for characters that appear *inside* the string portion of the
+line (i.e., after the opening double-quote).  Characters outside the
+string, and characters inside any nested quoted sub-strings that are
+both opened and closed on this line, are ignored.
+This is used to account for paren depth opened inside a string on the
+same line that starts the multiline string."
+  (let ((delta 0)
+        (in-string nil)
+        (i 0)
+        (len (length line-str)))
+    (while (< i len)
+      (let ((ch (aref line-str i)))
+        (cond
+         ((= ch ?\")
+          (setq in-string (not in-string)))
+         (in-string
+          (cond
+           ((or (= ch ?\() (= ch ?\[)) (setq delta (1+ delta)))
+           ((or (= ch ?\)) (= ch ?\])) (setq delta (1- delta)))))
+         ;; Outside string: stop at a line comment
+         ((and (not in-string) (= ch ?#))
+          (when (gmic--comment-start-p line-str i)
+            (setq i len)))))
+      (setq i (1+ i)))
+    (* delta gmic-indent-offset)))
+
 (defun gmic--line-is-closing-quote-p (line-str)
   "Return t if LINE-STR consists solely of a closing double-quote
 \(possibly surrounded by whitespace).  Such a line ends a multiline
@@ -597,7 +627,8 @@ Special cases forced to column 0 regardless of context:
                                         (gmic--paren-delta prev)
                                         (gmic--paren-leading-close-delta prev)))
                         (when (gmic--line-opens-string-p prev)
-                          (setq indent (+ indent gmic-indent-offset)))
+                          (setq indent (+ indent gmic-indent-offset
+                                          (gmic--paren-delta-in-string-portion prev))))
                         (setq found t))
                     ;; Outside strings: skip lines that are inside a string.
                     (let ((prev-in-string (gmic--in-multiline-string-p)))
@@ -632,13 +663,36 @@ Special cases forced to column 0 regardless of context:
 ;;;; -------------------------------------------------------------------------
 ;;;; Run support
 
+(defun gmic--current-command-name ()
+  "Return the name of the G'MIC command definition enclosing point.
+Scans backward from the current position for a line matching the
+pattern `name :' (command definition).  Returns the command name
+as a string, or nil if none is found."
+  (save-excursion
+    (end-of-line)
+    (let ((found nil))
+      (while (and (not found) (not (bobp)))
+        (beginning-of-line)
+        (when (looking-at "^\\s-*\\([a-zA-Z_][a-zA-Z0-9_]*\\)\\s-*\\(([^)]*)\\s-*\\)?:\\([^=]\\|$\\)")
+          (setq found (match-string-no-properties 1)))
+        (unless found (forward-line -1)))
+      found)))
+
 (defun gmic-run ()
-  "Run the current G'MIC script buffer using `gmic-executable'."
+  "Run the G'MIC command enclosing point using `gmic-executable'.
+The command executed is: gmic FILENAME COMMAND_NAME
+where COMMAND_NAME is the name of the command definition at or
+above point.  If no command definition is found, falls back to
+running the whole file without a command argument."
   (interactive)
   (let ((file (buffer-file-name)))
-    (if file
-        (compile (concat gmic-executable " " (shell-quote-argument file)))
-      (user-error "Buffer has no associated file; save it first"))))
+    (if (not file)
+        (user-error "Buffer has no associated file; save it first")
+      (let* ((cmd (gmic--current-command-name))
+             (shell-cmd (concat gmic-executable
+                                " " (shell-quote-argument file)
+                                (when cmd (concat " " cmd)))))
+        (compile shell-cmd)))))
 
 (defun gmic-run-region (beg end)
   "Run the G'MIC commands in the selected region BEG to END."

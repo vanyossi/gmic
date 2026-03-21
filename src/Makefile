@@ -87,7 +87,9 @@ INCLUDE ?= include
 PIC = -fPIC
 EXE =
 WGET = wget --no-check-certificate --quiet -O
-GIMPTOOL = $(shell command -v gimptool-3.0 >/dev/null 2>&1 && echo gimptool-3.0 || echo gimptool-2.0)
+GIMPTOOL = $(shell command -v gimptool-3.2 >/dev/null 2>&1 && echo gimptool-3.2 || \
+           command -v gimptool-3.0 >/dev/null 2>&1 && echo gimptool-3.0 || \
+           echo gimptool-2.0)
 PLUGIN = $(shell $(GIMPTOOL) --gimpplugindir)/plug-ins
 SHARE = $(PREFIX)/share
 BASH_COMPLETIONSDIR = $(shell pkg-config --variable completionsdir bash-completion || echo $(SHARE)/bash-completion/completions)
@@ -155,14 +157,12 @@ EXE = .exe
 PIC =
 endif
 
-ifneq (,$(findstring g++,$(CXX)))
-IS_GCC = 1
-endif
 ifneq (,$(findstring clang++,$(CXX)))
 IS_CLANG = 1
-endif
-ifneq (,$(findstring icpc,$(CXX)))
+else ifneq (,$(findstring icpc,$(CXX)))
 IS_ICPC = 1
+else ifneq (,$(findstring g++,$(CXX)))
+IS_GCC = 1
 endif
 
 ifdef NOSTRIP
@@ -458,17 +458,21 @@ opencv: # Default: With OpenCV support
 
 half: # Using float16 rather than float32 to store images: HIGHLY EXPERIMENTAL, DO NOT EXPECT MUCH FROM THAT!
 	$(MAKE) "CFLAGS+=$(GMIC_STD_CFLAGS) $(OPT_CFLAGS) -Dgmic_pixel_type=half" "LIBS+=gmic.o $(GMIC_STD_LIBS)" gmic.o _cli
+	$(STRIP) gmic$(EXE)
 
 double: # Using float64 rather than float32 to store images
 	$(MAKE) "CFLAGS+=$(GMIC_STD_CFLAGS) $(OPT_CFLAGS) -Dgmic_pixel_type=double" "LIBS+=gmic.o $(GMIC_STD_LIBS)" gmic.o _cli
+	$(STRIP) gmic$(EXE)
 
 native: # Optimized with architecture-specific flags, with OpenCV support
 	$(MAKE) "OPT_CFLAGS=-O3 -march=native -mtune=native -funroll-loops -fno-math-errno" opencv
+	$(STRIP) gmic$(EXE)
 
 # Debug builds.
 #
 dev: # Without optimizations enabled, used for quick compile
 	$(MAKE) "CFLAGS+=$(GMIC_STD_CFLAGS)" "LIBS+=gmic.o $(GMIC_STD_LIBS)" gmic.o _cli
+	$(STRIP) gmic$(EXE)
 
 debug: # With sanitize-address enabled and symbols kept, to track bugs
 	$(MAKE) "CFLAGS+=$(GMIC_STD_CFLAGS) $(DEBUG_CFLAGS)" "LIBS+=gmic.o $(GMIC_STD_LIBS)" gmic.o _cli
